@@ -315,10 +315,13 @@ const SPARRING_MODES = {
 
 async function callClaude(messages, systemOverride) {
   try {
-    const res = await fetch("/api/claude", {
+    const url = getApiUrl();
+    if (!url) return "API not configured.";
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
+        _action: "claude",
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
         system: systemOverride || AT_COACH_SYSTEM,
@@ -326,7 +329,8 @@ async function callClaude(messages, systemOverride) {
       }),
     });
     const data = await res.json();
-    return data.content?.map(c => c.text || "").join("\n") || "No response.";
+    if (data.error) return "Error: " + data.error;
+    return data.content?.map(c => c.text || "").join("\n") || data.text || "No response.";
   } catch (e) {
     console.error("Claude API error:", e);
     return "Unable to connect to the sparring partner right now.";

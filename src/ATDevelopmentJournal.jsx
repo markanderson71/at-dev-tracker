@@ -322,7 +322,7 @@ async function callClaude(messages, systemOverride) {
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
         _action: "claude",
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 1000,
         system: systemOverride || AT_COACH_SYSTEM,
         messages,

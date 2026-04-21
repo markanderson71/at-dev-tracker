@@ -128,7 +128,7 @@ const USERS = {
 // ═══════════════════════════════════════════════════════════════════════
 
 function getApiUrl() {
-  return (typeof window !== "undefined" && window.__AT_API_URL__) || "";
+  return (typeof window !== "undefined" && window.__AT_API_URL__) || "https://script.google.com/macros/s/AKfycby2YyaH64zMSQH5Kmw2PPzfKpFYG-5fdOjn4MivWACs25Bnp9k8sBW2JtDaHlzlmP4l/exec";
 }
 
 async function apiGet(sheetName) {
@@ -547,6 +547,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
 ═══ ADD YOUR OWN NOTES BELOW ═══
 `); // PSIA content — editable by Mark
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [apiStatus, setApiStatus] = useState("loading"); // loading | connected | error | offline
 
   // ── UI State ────────────────────────────────────────────
   const [tab, setTab] = useState("journal");
@@ -573,13 +574,23 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
 
   // ── Load data ──────────────────────────────────────────
   useEffect(() => {
-    if (!getApiUrl()) { setDataLoaded(true); return; }
+    const url = getApiUrl();
+    console.log("AT Journal init — API URL:", url ? url.slice(0, 50) + "..." : "NOT SET");
+    if (!url) { console.warn("No API URL configured — running in offline mode"); setApiStatus("offline"); setDataLoaded(true); return; }
     async function loadAll() {
       try {
         // Load journal entries
         const rows = await apiGet("JournalEntries");
-        console.log("Loaded rows:", rows.length, "ids:", rows.map(r => r.id).slice(0, 10));
-        const parsed = rows.filter(r => r.id && !r.id.startsWith("_")).map(r => {
+        console.log("Loaded rows:", rows.length, "ids:", rows.slice(0, 10).map(r => r.id));
+        if (rows.length === 0) { setApiStatus("error"); }
+        else { setApiStatus("connected"); }
+        const parsed = rows.filter(r => {
+          if (r.id && r.id.startsWith("_")) return false;
+          if (r.id) return true;
+          if (r.date || r.whatISaw || r.context) return true;
+          return false;
+        }).map(r => {
+          if (!r.id) r.id = uid(); // assign id to entries missing one
           let connectionTags = [];
           let themeIds = [];
           let mentorPulse = {};
@@ -635,7 +646,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
           try { setClinicFeedback(JSON.parse(cfRow.data)); } catch(e) {}
         }
 
-      } catch (e) { console.error("Failed to load:", e); }
+      } catch (e) { console.error("Failed to load:", e); setApiStatus("error"); }
       setDataLoaded(true);
     }
     loadAll();
@@ -651,11 +662,13 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
     });
     const sheetRow = {
       ...entry,
+      id: entry.id, // ensure id is explicitly set (not just from spread)
       connectionTags: JSON.stringify(entry.connectionTags || []),
       themeIds: JSON.stringify(entry.themeIds || []),
       mentorPulse: JSON.stringify(entry.mentorPulse || {}),
       mentorComments: JSON.stringify(entry.mentorComments || []),
     };
+    console.log("Saving entry:", sheetRow.id, isNew ? "CREATE" : "UPDATE");
     if (isNew) apiCreate("JournalEntries", sheetRow);
     else apiUpdate("JournalEntries", sheetRow);
   };

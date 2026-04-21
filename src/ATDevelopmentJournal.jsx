@@ -141,7 +141,12 @@ async function apiGet(sheetName) {
       body: JSON.stringify({ _action: "getAll", _sheet: sheetName }),
     });
     const data = await res.json();
-    return data.rows || [];
+    console.log("API response for", sheetName, ":", typeof data, Array.isArray(data), data?.rows ? data.rows.length + " rows" : "no rows key");
+    if (Array.isArray(data)) return data;
+    if (data?.rows && Array.isArray(data.rows)) return data.rows;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    console.warn("Unexpected API response format:", Object.keys(data || {}));
+    return [];
   } catch (e) { console.error("API GET error:", sheetName, e); return []; }
 }
 
@@ -573,13 +578,19 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
       try {
         // Load journal entries
         const rows = await apiGet("JournalEntries");
-        const parsed = rows.filter(r => r.id && !r.id.startsWith("_")).map(r => ({
-          ...r,
-          connectionTags: r.connectionTags ? JSON.parse(r.connectionTags) : [],
-          themeIds: r.themeIds ? JSON.parse(r.themeIds) : [],
-          mentorPulse: r.mentorPulse ? JSON.parse(r.mentorPulse) : {},
-          mentorComments: r.mentorComments ? JSON.parse(r.mentorComments) : [],
-        }));
+        console.log("Loaded rows:", rows.length, "ids:", rows.map(r => r.id).slice(0, 10));
+        const parsed = rows.filter(r => r.id && !r.id.startsWith("_")).map(r => {
+          let connectionTags = [];
+          let themeIds = [];
+          let mentorPulse = {};
+          let mentorComments = [];
+          try { connectionTags = r.connectionTags ? JSON.parse(r.connectionTags) : []; } catch(e) { console.warn("Bad connectionTags for", r.id, r.connectionTags); }
+          try { themeIds = r.themeIds ? JSON.parse(r.themeIds) : []; } catch(e) { console.warn("Bad themeIds for", r.id); }
+          try { mentorPulse = r.mentorPulse ? JSON.parse(r.mentorPulse) : {}; } catch(e) { console.warn("Bad mentorPulse for", r.id); }
+          try { mentorComments = r.mentorComments ? JSON.parse(r.mentorComments) : []; } catch(e) { console.warn("Bad mentorComments for", r.id); }
+          return { ...r, connectionTags, themeIds, mentorPulse, mentorComments };
+        });
+        console.log("Parsed entries:", parsed.length);
         setEntries(parsed);
 
         // Load themes

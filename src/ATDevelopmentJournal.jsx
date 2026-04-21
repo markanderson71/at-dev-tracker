@@ -328,6 +328,17 @@ async function callClaude(messages, systemOverride) {
   }
 }
 
+// ── Shared UI Components (must be outside main component to avoid remounting) ──
+const Card = ({ children, style = {} }) => (
+  <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px 14px", marginBottom: 10, ...style }}>{children}</div>
+);
+const SectionLabel = ({ children }) => (
+  <div style={{ fontSize: 11, color: "#7a9ab5", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{children}</div>
+);
+const INP_STYLE = { padding: "8px 10px", fontSize: 14, color: "#c0ccd8", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 6, outline: "none", fontFamily: "inherit", boxSizing: "border-box", width: "100%" };
+const TXTA_STYLE = { ...INP_STYLE, minHeight: 60, resize: "vertical", lineHeight: 1.6 };
+const LBL_STYLE = { fontSize: 11, color: "#7a9ab5", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 4 };
+
 // ═══════════════════════════════════════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════════════
@@ -752,16 +763,10 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
   const MENTOR_TABS = ["journal", "themes", "growth", "checkpoints", "videos", "timeline"];
   const VISIBLE_TABS = isCandidate ? CANDIDATE_TABS : MENTOR_TABS;
 
-  // ── Styles ────────────────────────────────────────────
-  const Card = ({ children, style = {} }) => (
-    <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px 14px", marginBottom: 10, ...style }}>{children}</div>
-  );
-  const SectionLabel = ({ children }) => (
-    <div style={{ fontSize: 11, color: "#7a9ab5", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{children}</div>
-  );
-  const inp = { padding: "8px 10px", fontSize: 14, color: "#c0ccd8", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 6, outline: "none", fontFamily: "inherit", boxSizing: "border-box", width: "100%" };
-  const txta = { ...inp, minHeight: 60, resize: "vertical", lineHeight: 1.6 };
-  const lbl = { fontSize: 11, color: "#7a9ab5", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 4 };
+  // ── Styles (aliased from constants for brevity) ──
+  const inp = INP_STYLE;
+  const txta = TXTA_STYLE;
+  const lbl = LBL_STYLE;
 
   // ── Login ──────────────────────────────────────────────
   if (!currentUser) {

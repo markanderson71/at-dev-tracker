@@ -150,17 +150,19 @@ async function apiGet(sheetName) {
   } catch (e) { console.error("API GET error:", sheetName, e); return []; }
 }
 
-async function apiPost(action, sheetName, rowData, id) {
+async function apiPost(action, sheetName, rowData) {
   const url = getApiUrl();
   if (!url) return;
   try {
     const payload = { ...rowData, _action: action, _sheet: sheetName };
-    if (id) payload._id = id;
-    await fetch(url, {
+    console.log("API POST:", action, "id:", rowData?.id, "keys:", Object.keys(rowData || {}));
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
     });
+    const text = await res.text();
+    console.log("API response:", action, text.slice(0, 200));
   } catch (e) { console.error(`API ${action} error:`, e); }
 }
 

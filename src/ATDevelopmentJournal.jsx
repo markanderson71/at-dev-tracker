@@ -575,6 +575,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
   const [analyzingMA, setAnalyzingMA] = useState(null); // session id being analyzed
 
   const saveTimerRef = useRef({});
+  const savedIdsRef = useRef(new Set());
 
   // ── Load data ──────────────────────────────────────────
   useEffect(() => {
@@ -607,6 +608,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
         });
         console.log("Parsed entries:", parsed.length);
         setEntries(parsed);
+        parsed.forEach(e => savedIdsRef.current.add(e.id));
 
         // Load themes
         const themeRow = rows.find(r => r.id === "_THEMES");
@@ -657,24 +659,48 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
   }, []);
 
   // ── Helpers ────────────────────────────────────────────
+  // Track which IDs have been saved to the sheet
+
   const saveEntry = (entry) => {
-    const isNew = !entries.find(e => e.id === entry.id);
+    if (!entry.id) { console.error("saveEntry called without id!"); return; }
+    const alreadySaved = savedIdsRef.current.has(entry.id);
+    
     setEntries(prev => {
       const idx = prev.findIndex(e => e.id === entry.id);
       if (idx >= 0) { const n = [...prev]; n[idx] = entry; return n; }
       return [entry, ...prev];
     });
+
     const sheetRow = {
-      ...entry,
-      id: entry.id, // ensure id is explicitly set (not just from spread)
+      id: entry.id,
+      date: entry.date || "",
+      context: entry.context || "",
+      location: entry.location || "",
+      conditions: entry.conditions || "",
+      whatISaw: entry.whatISaw || "",
+      whatWasGoingOn: entry.whatWasGoingOn || "",
+      whatIDid: entry.whatIDid || "",
+      whyThatApproach: entry.whyThatApproach || "",
+      whatHappened: entry.whatHappened || "",
+      whatIdDoDifferently: entry.whatIdDoDifferently || "",
+      videoUrl: entry.videoUrl || "",
       connectionTags: JSON.stringify(entry.connectionTags || []),
       themeIds: JSON.stringify(entry.themeIds || []),
+      depthLevel: entry.depthLevel || "",
+      resourceId: entry.resourceId || "",
+      season: entry.season || getCurrentSeason(),
+      timestamp: entry.timestamp || new Date().toISOString(),
       mentorPulse: JSON.stringify(entry.mentorPulse || {}),
       mentorComments: JSON.stringify(entry.mentorComments || []),
     };
-    console.log("Saving entry:", sheetRow.id, isNew ? "CREATE" : "UPDATE");
-    if (isNew) apiCreate("JournalEntries", sheetRow);
-    else apiUpdate("JournalEntries", sheetRow);
+
+    console.log("Saving entry:", entry.id, alreadySaved ? "UPDATE" : "CREATE");
+    if (alreadySaved) {
+      apiUpdate("JournalEntries", sheetRow);
+    } else {
+      apiCreate("JournalEntries", sheetRow);
+      savedIdsRef.current.add(entry.id);
+    }
   };
 
   const saveThemes = (newThemes) => {

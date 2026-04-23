@@ -278,11 +278,20 @@ Mark has watched a video of skiing (his own or a student's) and written his anal
 4. Ask about prescription: "Based on your analysis, what would you do? What terrain? What exercise? Why?"
 5. Challenge his depth: "You're describing what you see — now tell me WHY it's happening"`;
 
-const MA_ANALYZER_SYSTEM = `You are scoring an Alpine Trainer candidate's Movement Analysis practice session. You score at the AT LEVEL, not Level 3.
+const MA_ANALYZER_SYSTEM = `You are scoring an Alpine Trainer candidate's Movement Analysis practice session as Chris (the AT assessor/examiner) would score it. You score using the Fitts & Posner scale at the AT LEVEL.
 
-AT-LEVEL SCORING STANDARD:
-A score of 3 means "L3-level thinking applied to an AT context" — the candidate sees some skill interactions but doesn't go deep enough.
-A score of 4 (PASS) means the candidate demonstrates AT-level depth: blended analysis using 3+ skills, cause-effect chains described by turn phase, physics/biomechanics connected to observations, prescription with IDP activity + variations adapted to conditions, and dialog-based verification.
+FITTS & POSNER SCALE:
+1 = Cognitive Low — guessing, no framework
+2 = Cognitive High — understands concepts but can't apply consistently
+3 = Associative Low — L3-level. Connects A→B but doesn't see the whole picture or prioritize
+4 = Associative High (PASS) — AT-level. Whole picture, prioritizes primary fundamental, multi-skill cascade, phase-specific, physics explained, prescription connected to intent, technical WHY demonstrated
+5 = Autonomous Low — Consistently above AT standard
+6 = Autonomous High — Mastery
+
+CALIBRATE AGAINST MENTOR ASSESSMENTS:
+If mentor development assessments are provided, use them as ground truth. Score based on whether Mark has addressed what the mentors are pushing on. If a mentor says "cause-effect lacks specific timing and phase," don't give a 4 on cause/effect unless Mark actually addresses timing AND phase in this session.
+
+SCORE HOLISTICALLY across the whole interaction.
 
 WHAT SEPARATES A 3 FROM A 4:
 - 3: Relates one fundamental to another with cause-effect: "Pressure is affecting edging" (bilateral, A→B)
@@ -291,6 +300,8 @@ WHAT SEPARATES A 3 FROM A 4:
 - 4: Prioritizes first, then traces a multi-fundamental chain to a VERY SPECIFIC root cause (which phase, which leg, what the ski does as a result)
 - 3: Identifies an issue and overrides the subject's stated focus OR defers to it and drops their own observation
 - 4: Connects their observation to the subject's intent — "You're working on steering, and here's how earlier edge engagement makes that steering more effective"
+- 3: Prescribes a task and explains why to the examiner but doesn't help the subject see why it matters to THEM
+- 4: Two distinct communications — delivers the task to the peer connected to their intent, then explains the technical WHY to the examiner at the biomechanics/physics level
 
 WHAT CHRIS PUSHES ON:
 - Anatomical vagueness ("both legs" without specifying which, when, where)
@@ -307,9 +318,9 @@ Score against these criteria:
 - Describe Performance: Phase-specific? Both ski AND body? Which leg, which joint?
 - Cause and Effect: Multi-skill chain? Primary cause identified? Bidirectional analysis?
 - Evaluate: Task compliance checked? Compared to intended outcome?
-- Prescription: IDP activity chosen? Variations? Terrain selection justified? Adapted to conditions?
+- Prescription: IDP activity chosen? Variations? Terrain selection justified? Adapted to conditions? Connected to subject's intent when delivered? Technical WHY explained to examiner?
 - Biomechanics/Physics: WHY explained at the physics level? Kinetic chain? Forces?
-- Communication: Organized by phase? Non-contradictory? Clear and logical?
+- Communication: Two audiences assessed — (1) To the peer: connected task to their focus/intent? Helped them see relevance without coaching? (2) To the examiner: organized by phase, clear cause-effect chain, technical depth demonstrated?
 
 Respond ONLY in this JSON format (no markdown, no backticks):
 {"skills_identified":["list of skills mentioned"],"cause_effect":"description of cause-effect relationships identified","root_cause":"what they identified as root cause","prescription":"what they prescribed","mentor_corrections":"key corrections from mentor if present","strengths":["list of strengths"],"gaps":["list of gaps/blind spots"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"pattern_notes":"recurring patterns or tendencies observed","key_learning":"the single most important thing to work on"}`;
@@ -333,18 +344,34 @@ YOUR QUESTIONING APPROACH (modeled on Chris's style):
 
 Ask ONE question at a time. Be specific. Sound like Chris, not a textbook.`;
 
-const MA_TREND_SCORER_SYSTEM = `You are scoring an Alpine Trainer candidate's MA practice session AND comparing it to their previous sessions to identify trends. Score at the AT LEVEL — a 3 means L3-level thinking, a 4 means genuine AT-level depth.
+const MA_TREND_SCORER_SYSTEM = `You are scoring an Alpine Trainer candidate's MA practice session as Chris (the AT assessor/examiner) would score it, using the Fitts & Posner scale. You are comparing to previous sessions to identify trends.
 
-A 4 requires: phase-specific description, multi-skill cause-effect chain, physics/biomechanics explanation, IDP activity prescription with variations and terrain justification, condition awareness, and evidence of dialog-based verification.
+SCORING APPROACH:
+Score the WHOLE INTERACTION holistically — the observation, dialog, prescription delivery, presentation, and examiner Q&A together. Don't score each piece in isolation. A candidate who writes shallow private notes but delivers a strong presentation and handles Q&A well should score higher than one who writes deep notes but can't articulate them.
 
-Assessment Scale: 1=Not observed, 2=Beginning, 3=L3-level, 4=AT-level (PASS), 5=Above, 6=Superior
+FITTS & POSNER SCALE (this is how Chris scores):
+1 = Cognitive Low — candidate is guessing, no framework, can't articulate what they see
+2 = Cognitive High — understands concepts but can't apply them consistently, surface-level connections
+3 = Associative Low — L3-level thinking. Sees some skill interactions, connects A→B, but doesn't see the whole picture. Doesn't prioritize. Describes the turn as one event. This is where most L3 instructors sit.
+4 = Associative High (PASS) — AT-level. Sees the whole picture, prioritizes the primary fundamental, traces multi-skill cascade to a specific root cause by phase. Connects prescription to subject's intent. Explains the technical WHY. Adapts to conditions. Verifies through dialog. This is the standard.
+5 = Autonomous Low — Consistently above AT standard. Analysis is fluid, precise, adapted. Communication to both audiences is natural.
+6 = Autonomous High — Mastery. Examiner-level depth and precision on every criterion.
 
-Score against: Describe (phase-specific, which leg/joint), Cause/Effect (multi-skill chain, primary cause), Evaluate (task compliance, intended vs observed), Prescription (IDP activity, variations, terrain, conditions), Biomechanics/Physics (WHY at physics level), Communication (organized, non-contradictory)
+CALIBRATE AGAINST CHRIS'S KNOWN ASSESSMENT:
+If mentor development assessments are provided, use them as your calibration. If Chris says Mark's cause-effect "lacks specific timing, phase and impacted ski performance," then don't give a 4 on cause/effect unless Mark actually addresses timing, phase, AND ski performance impact in THIS session. If Chris says Mark "jumps to prescription without verifying," don't give a 4 on prescription unless Mark actually verified through dialog first. The mentor assessment is the ground truth — your scores should reflect whether Mark has addressed what Chris is pushing on.
+
+SCORE THESE CRITERIA (against the whole interaction):
+- Describe: Did Mark describe by turn phase? Both ski and body performance? Specific about which leg, joint, timing?
+- Cause/Effect: Did Mark see the whole picture, prioritize the primary fundamental, then trace a multi-skill cascade? Or just connect A→B?
+- Evaluate: Did Mark check task compliance? Compare intended vs observed? Verify through dialog before diagnosing?
+- Prescription: Did Mark choose an appropriate IDP task with variations? Connect it to the subject's intent when delivering? Explain the technical WHY to the examiner? Adapt to conditions?
+- Biomechanics/Physics: Did Mark explain WHY at the physics level? Kinetic chain, forces, ski/snow interaction?
+- Communication: Two audiences — did Mark help the peer see relevance to their focus? Did Mark demonstrate technical depth to the examiner organized by phase?
 
 COMPARE to previous sessions. Identify what IMPROVED, what PERSISTS as a gap, and what's NEW.
 
 Respond ONLY in JSON (no markdown, no backticks):
-{"skills_identified":["list"],"cause_effect":"description","root_cause":"what identified","prescription":"what prescribed","mentor_corrections":"corrections if present","strengths":["list"],"gaps":["list"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"improvements":["what got better vs previous"],"persistent_gaps":["gaps that keep appearing"],"new_observations":["new things"],"key_learning":"single most important focus"}`;
+{"skills_identified":["list"],"cause_effect":"description","root_cause":"what identified","prescription":"what prescribed","mentor_corrections":"corrections if present","strengths":["list"],"gaps":["list"],"did_well":["specific things done well"],"opportunity":["specific areas to improve"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"improvements":["what got better vs previous"],"persistent_gaps":["gaps that keep appearing"],"new_observations":["new things"],"key_learning":"single most important focus"}`;
 
 const MA_PEER_DIALOG_SYSTEM = `You are acting as a ski instructor PEER being observed and questioned by an Alpine Trainer candidate (Mark) during an MA practice exam. Mark has watched you ski and is now asking you questions to verify his observations.
 
@@ -382,16 +409,18 @@ YOU HAVE ACCESS TO:
 YOUR DEBRIEF APPROACH (based on the real AT exam format):
 1. Start by acknowledging ONE thing Mark did well — be specific
 2. Ask about additional data: "Was there anything else you noticed that you didn't address?"
-3. Probe the prescription: "Why did you choose THAT IDP task? What does it target? How would you vary it?"
-4. Ask if the peer changed: "Based on your dialog, do you think the peer understood the issue? What would indicate change?"
-5. Push on gaps you see in his analysis — use Chris's style:
+3. Probe the prescription DELIVERY (to the peer): "When you delivered the task to the peer, did you connect it to what they said they were working on? Did they understand WHY this task was relevant to their intent?"
+4. Probe the technical WHY (in the presentation): "You explained why you chose this task — can you go deeper on the biomechanics? Why does THIS task change THAT movement pattern at the physics level?"
+5. Ask if the peer changed: "Based on your dialog, do you think the peer understood the issue? What would indicate change?"
+6. Push on gaps you see in his analysis — use Chris's style:
    - "You identified X — but which PHASE of the turn does it happen in?"
    - "You prescribed Y — but the conditions were Z. Does that prescription still work?"
    - "The peer told you they were trying to ski faster — how does that change your diagnosis?"
-   - "The peer said they were focused on steering, and you identified edging. Did you connect those for them? How does your observation serve their focus?"
-   - "You told the peer what to work on — but did you help them understand how it connects to what THEY were already trying to do?"
-6. Ask ONE question at a time. Be direct.
-7. After 3-4 exchanges, provide a brief honest summary before scoring.`;
+   - "You connected two fundamentals — which one is DRIVING the others?"
+   - "You told the peer what to do — but did you help them see WHY it connects to their focus?"
+   - "You explained the task to me — now tell me what happens in the kinetic chain. Why does this task produce that change?"
+7. Ask ONE question at a time. Be direct.
+8. After 3-4 exchanges, provide a brief honest summary before scoring.`;
 
 const SPARRING_MODES = {
   open: { label: "Open Chat", desc: "Free conversation — ask anything", system: AT_COACH_SYSTEM, color: "#c060a0", icon: "💬" },
@@ -2819,7 +2848,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                           }
 
                           const input = `INITIAL MA:\n${writtenMA.transcript}\n\nEXAMINER DIALOG:\n${dialogText}${pastContext}\n\nContext: ${writtenMA.who || ""}, ${writtenMA.activity || ""}, ${writtenMA.conditions || ""}`;
-                          const resp = await callClaude([{ role: "user", content: input }], MA_TREND_SCORER_SYSTEM);
+                          const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                           let parsed = null;
                           try { parsed = JSON.parse(resp.replace(/```json|```/g, "").trim()); } catch(e) { parsed = resp; }
                           setWrittenMAResult(parsed);
@@ -2996,15 +3025,13 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                   {/* Phase 4: Prescription */}
                   {examMA.phase === "prescribe" && (
                     <>
-                      <div style={{ fontSize: 13, color: "#d06060", fontWeight: 600, marginBottom: 8 }}>Step 4: Prescribe a change</div>
-                      <div style={{ fontSize: 11, color: "#7a9ab5", marginBottom: 8 }}>Choose an IDP task (Individual or Versatility) from the L3 IDP. Include variations.</div>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={lbl}>IDP task and variations</label>
-                        <textarea value={examMA.prescription} onChange={ev => setExamMA(p => ({ ...p, prescription: ev.target.value }))} placeholder="e.g., Pivot slips → Railroad track turns → Dynamic short turns. Variations: change speed, change terrain pitch, add a pause at edge change..." style={{ ...txta, minHeight: 80, fontSize: 14, lineHeight: 1.7 }} />
+                      <div style={{ fontSize: 13, color: "#d06060", fontWeight: 600, marginBottom: 4 }}>Step 4: Prescribe to the subject</div>
+                      <div style={{ fontSize: 12, color: "#7a9ab5", marginBottom: 8, lineHeight: 1.5 }}>
+                        Deliver your prescription to the instructor. This is NOT a coaching moment — but you do need to connect the task to their stated intent so they understand the relevance.
                       </div>
                       <div style={{ marginBottom: 8 }}>
-                        <label style={lbl}>Why this task? What does it target?</label>
-                        <textarea value={examMA.prescriptionReason} onChange={ev => setExamMA(p => ({ ...p, prescriptionReason: ev.target.value }))} placeholder="Why did you choose this task? How does it address the root cause? What terrain would you use and why?" style={{ ...txta, minHeight: 60, fontSize: 14, lineHeight: 1.7 }} />
+                        <label style={lbl}>IDP task, variations, and how it connects to their focus</label>
+                        <textarea value={examMA.prescription} onChange={ev => setExamMA(p => ({ ...p, prescription: ev.target.value }))} placeholder={"Deliver this as you would to the instructor:\n\n\"Based on our conversation about your steering, I'd like to have you try pivot slips into railroad track turns. The pivot slip will help you feel the edge engage earlier in the turn — and that earlier grip is what will make your steering more effective. Let's start on Schoolmarm, then move to Last Alley to add pitch. Variations: pause at edge change, change speed...\""} style={{ ...txta, minHeight: 100, fontSize: 14, lineHeight: 1.7 }} />
                       </div>
                       <button onClick={() => {
                         if (!examMA.prescription.trim()) return;
@@ -3019,9 +3046,9 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                   {/* Phase 5: Present to Examiner */}
                   {examMA.phase === "present" && (
                     <>
-                      <div style={{ fontSize: 13, color: "#d06060", fontWeight: 600, marginBottom: 4 }}>Step 5: Present your analysis</div>
+                      <div style={{ fontSize: 13, color: "#d06060", fontWeight: 600, marginBottom: 4 }}>Step 5: Present your analysis to the examiner</div>
                       <div style={{ fontSize: 12, color: "#7a9ab5", marginBottom: 10, lineHeight: 1.5 }}>
-                        This is what you say OUT LOUD to the examiner. They heard your peer dialog and prescription — now present your full analysis: what you observed, the root cause, why you chose your prescription, and how it connects to the subject's intent.
+                        The examiner heard your dialog and prescription. Now explain the technical WHY — your observations, root cause, why this task targets it, the biomechanics and skill relationships behind your choice. This is you demonstrating your knowledge, not coaching.
                       </div>
 
                       {/* Private notes reference */}
@@ -3033,14 +3060,14 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                       </details>
 
                       <label style={lbl}>Your presentation to the examiner</label>
-                      <textarea value={examMA.presentation} onChange={ev => setExamMA(p => ({ ...p, presentation: ev.target.value }))} placeholder={"Present your full analysis as you would say it to an examiner:\n\n• What you observed (by turn phase)\n• The cause-effect chain and root cause\n• How the peer dialog confirmed or changed your thinking\n• Your prescription — the IDP task, variations, terrain, and WHY\n• How your prescription connects to the subject's stated intent/focus"} style={{ ...txta, minHeight: 150, fontSize: 14, lineHeight: 1.7, marginBottom: 8 }} />
+                      <textarea value={examMA.presentation} onChange={ev => setExamMA(p => ({ ...p, presentation: ev.target.value }))} placeholder={"Present to the examiner:\n\n• What you observed by turn phase — ski performance and body performance\n• The cause-effect chain and root cause — which fundamental is driving the others\n• WHY you chose this IDP task — what it targets at the biomechanics/physics level\n• Why this terrain, why these variations\n• How the task addresses the root cause and serves the subject's stated intent"} style={{ ...txta, minHeight: 150, fontSize: 14, lineHeight: 1.7, marginBottom: 8 }} />
 
                       <button onClick={async () => {
                         if (!examMA.presentation.trim()) return;
                         setExamMALoading(true);
                         setExamMA(p => ({ ...p, phase: "debrief" }));
                         const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                        const fullContext = `THE EXAMINER HEARD THE FOLLOWING:\n\nPEER DIALOG (examiner observed this):\n${dialogText}\n\nMARK'S PRESCRIPTION (examiner heard this):\nTask: ${examMA.prescription}\nVariations/Reasoning: ${examMA.prescriptionReason}\n\nMARK'S PRESENTATION TO EXAMINER (this is what Mark said out loud):\n${examMA.presentation}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nBegin your examiner debrief. You only know what you heard — the peer dialog, the prescription, and Mark's presentation. Start by acknowledging one thing Mark did well, then ask your first probing question.`;
+                        const fullContext = `THE EXAMINER HEARD THE FOLLOWING:\n\nPEER DIALOG (examiner observed this):\n${dialogText}\n\nMARK'S PRESCRIPTION DELIVERED TO PEER:\n${examMA.prescription}\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nBegin your examiner debrief. You only know what you heard — the peer dialog, the prescription delivery, and Mark's technical presentation. Start by acknowledging one thing Mark did well, then ask your first probing question.`;
                         const resp = await callClaude([{ role: "user", content: fullContext }], buildSystemPrompt(MA_EXAM_DEBRIEF_SYSTEM));
                         setExamMA(p => ({ ...p, debriefMessages: [{ role: "assistant", content: resp }] }));
                         setExamMALoading(false);
@@ -3084,7 +3111,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                               ev.target.value = "";
                               setExamMALoading(true);
                               const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                              const baseContext = `Mark's presentation: ${examMA.presentation}\nPeer dialog: ${dialogText}\nPrescription: ${examMA.prescription}\nReasoning: ${examMA.prescriptionReason}`;
+                              const baseContext = `Mark's presentation: ${examMA.presentation}\nPeer dialog: ${dialogText}\nPrescription delivered to peer: ${examMA.prescription}`;
                               const msgs = [{ role: "user", content: baseContext }, ...newMsgs];
                               const resp = await callClaude(msgs, buildSystemPrompt(MA_EXAM_DEBRIEF_SYSTEM));
                               setExamMA(p => ({ ...p, debriefMessages: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -3101,7 +3128,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                           el.value = "";
                           setExamMALoading(true);
                           const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                          const baseContext = `Mark's presentation: ${examMA.presentation}\nPeer dialog: ${dialogText}\nPrescription: ${examMA.prescription}\nReasoning: ${examMA.prescriptionReason}`;
+                          const baseContext = `Mark's presentation: ${examMA.presentation}\nPeer dialog: ${dialogText}\nPrescription delivered to peer: ${examMA.prescription}`;
                           const msgs = [{ role: "user", content: baseContext }, ...newMsgs];
                           const resp = await callClaude(msgs, buildSystemPrompt(MA_EXAM_DEBRIEF_SYSTEM));
                           setExamMA(p => ({ ...p, debriefMessages: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -3134,8 +3161,8 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                             });
                             revisionContext += "Score this attempt on its own merits but note what improved from previous attempts.\n";
                           }
-                          const input = `FULL AT MA EXAM SESSION:\n\nMARK'S PRESENTATION TO EXAMINER (what he said out loud):\n${examMA.presentation}\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION:\nTask: ${examMA.prescription}\nReasoning: ${examMA.prescriptionReason}\n\nEXAMINER Q&A:\n${debriefText}\n\nMARK'S PRIVATE NOTES (for comparison — did he articulate everything he saw?):\nObservations: ${examMA.observations}\nRoot cause: ${examMA.rootCause}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nIMPORTANT: Score based on what Mark PRESENTED and how he handled the Q&A, not just his private notes. If his private notes show deeper thinking than his presentation, that's a gap in communication. In your response JSON, include two additional fields:\n"did_well": ["list of specific things Mark did well in this MA"]\n"opportunity": ["list of specific areas where Mark can improve"]`;
-                          const resp = await callClaude([{ role: "user", content: input }], MA_TREND_SCORER_SYSTEM);
+                          const input = `FULL AT MA EXAM SESSION:\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERED TO PEER:\n${examMA.prescription}\n\nEXAMINER Q&A:\n${debriefText}\n\nMARK'S PRIVATE NOTES (for comparison — did he articulate everything he saw?):\nObservations: ${examMA.observations}\nRoot cause: ${examMA.rootCause}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nIMPORTANT: Score based on what Mark PRESENTED and how he handled the Q&A, not just his private notes. Evaluate TWO aspects of the prescription: (1) Did he connect the task to the subject's intent when delivering it? (2) Did he explain the technical WHY to the examiner — biomechanics, physics, skill relationships? If his private notes show deeper thinking than his presentation, that's a gap in communication. In your response JSON, include two additional fields:\n"did_well": ["list of specific things Mark did well in this MA"]\n"opportunity": ["list of specific areas where Mark can improve"]`;
+                          const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                           let parsed = null;
                           try { parsed = JSON.parse(resp.replace(/```json|```/g, "").trim()); } catch(e) { parsed = resp; }
 
@@ -3153,58 +3180,78 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                     </>
                   )}
 
-                  {/* Phase 6: Scored — with retry */}
+                  {/* Phase 7: Scored — with retry */}
                   {examMA.phase === "scored" && examMA.result && (() => {
                     const scoreColor = (v) => v >= 4 ? "#28a858" : v >= 3 ? "#e07830" : "#e05028";
                     const scoreKeys = [{ key: "describe", label: "Describe" }, { key: "cause_effect", label: "Cause/Effect" }, { key: "evaluate", label: "Evaluate" }, { key: "prescription", label: "Prescription" }, { key: "biomechanics", label: "Bio/Physics" }, { key: "communication", label: "Comm" }];
 
                     // Calculate best attempt
                     const getTotal = (a) => a?.scores ? scoreKeys.reduce((sum, sc) => sum + (a.scores[sc.key] || 0), 0) : 0;
-                    const bestAttempt = examMA.attempts.reduce((best, a) => getTotal(a) > getTotal(best) ? a : best, examMA.attempts[0]);
+                    const bestAttempt = examMA.attempts.length > 0 ? examMA.attempts.reduce((best, a) => getTotal(a) > getTotal(best) ? a : best, examMA.attempts[0]) : null;
                     const canRetry = examMA.attempts.length < 4; // 1 initial + 3 revisions
-                    const currentAttempt = examMA.attempts[examMA.attempts.length - 1];
-                    const p = typeof currentAttempt === "object" && currentAttempt?.scores ? currentAttempt : null;
-
-                    if (!p) return <div style={{ padding: "12px", borderRadius: 8, background: "rgba(208,96,96,0.04)", fontSize: 13, color: "#d0d8e0", whiteSpace: "pre-wrap" }}>{typeof examMA.result === "string" ? examMA.result : JSON.stringify(examMA.result)}</div>;
+                    const currentAttempt = examMA.attempts.length > 0 ? examMA.attempts[examMA.attempts.length - 1] : null;
+                    const hasScores = currentAttempt?.scores;
 
                     return (
                       <div style={{ padding: "14px", borderRadius: 8, background: "rgba(208,96,96,0.04)", border: "1px solid rgba(208,96,96,0.1)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "#d06060" }}>{examMA.attempts.length === 1 ? "INITIAL SCORE" : `REVISION ${examMA.attempts.length - 1} OF 3`} — {today()}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#d06060" }}>{examMA.attempts.length <= 1 ? "INITIAL SCORE" : `REVISION ${examMA.attempts.length - 1} OF 3`} — {today()}</div>
                           {examMA.attempts.length > 1 && <div style={{ fontSize: 11, fontWeight: 600, color: "#28a858" }}>Best score highlighted below</div>}
                         </div>
 
-                        {/* Current attempt scores */}
-                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-                          {scoreKeys.map(sc => (
-                            <div key={sc.key} style={{ textAlign: "center", minWidth: 50 }}>
-                              <div style={{ fontSize: 22, fontWeight: 800, color: scoreColor(p.scores[sc.key] || 0) }}>{p.scores[sc.key] || "—"}</div>
-                              <div style={{ fontSize: 9, color: "#7a9ab5", fontWeight: 600 }}>{sc.label}</div>
+                        {hasScores ? (
+                          <>
+                            {/* Scores */}
+                            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+                              {scoreKeys.map(sc => (
+                                <div key={sc.key} style={{ textAlign: "center", minWidth: 50 }}>
+                                  <div style={{ fontSize: 22, fontWeight: 800, color: scoreColor(currentAttempt.scores[sc.key] || 0) }}>{currentAttempt.scores[sc.key] || "—"}</div>
+                                  <div style={{ fontSize: 9, color: "#7a9ab5", fontWeight: 600 }}>{sc.label}</div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
 
-                        {/* What you did well */}
-                        {(p.did_well?.length > 0 || p.strengths?.length > 0) && (
-                          <div style={{ marginBottom: 6, padding: "6px 8px", borderRadius: 4, background: "rgba(40,168,88,0.06)", border: "1px solid rgba(40,168,88,0.12)" }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT YOU DID WELL: </span>
-                            <span style={{ fontSize: 12, color: "#d0d8e0" }}>{(p.did_well || p.strengths || []).join(" · ")}</span>
+                            {/* What you did well */}
+                            {(currentAttempt.did_well?.length > 0 || currentAttempt.strengths?.length > 0) && (
+                              <div style={{ marginBottom: 6, padding: "6px 8px", borderRadius: 4, background: "rgba(40,168,88,0.06)", border: "1px solid rgba(40,168,88,0.12)" }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT YOU DID WELL: </span>
+                                <span style={{ fontSize: 12, color: "#d0d8e0" }}>{(currentAttempt.did_well || currentAttempt.strengths || []).join(" · ")}</span>
+                              </div>
+                            )}
+
+                            {/* Opportunity to improve */}
+                            {(currentAttempt.opportunity?.length > 0 || currentAttempt.gaps?.length > 0) && (
+                              <div style={{ marginBottom: 6, padding: "6px 8px", borderRadius: 4, background: "rgba(224,120,48,0.06)", border: "1px solid rgba(224,120,48,0.12)" }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>OPPORTUNITY TO IMPROVE: </span>
+                                <span style={{ fontSize: 12, color: "#d0d8e0" }}>{(currentAttempt.opportunity || currentAttempt.gaps || []).join(" · ")}</span>
+                              </div>
+                            )}
+
+                            {currentAttempt.improvements?.length > 0 && <div style={{ marginBottom: 6 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#3088cc" }}>IMPROVED VS PREVIOUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{currentAttempt.improvements.join(" · ")}</span></div>}
+                            {currentAttempt.key_learning && <div style={{ padding: "8px 10px", borderRadius: 5, background: "rgba(224,120,48,0.06)", border: "1px solid rgba(224,120,48,0.15)", marginTop: 6 }}><span style={{ fontSize: 11, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 13, color: "#d0d8e0" }}>{currentAttempt.key_learning}</span></div>}
+                          </>
+                        ) : (
+                          /* Fallback: display as readable text */
+                          <div style={{ padding: "10px 12px", borderRadius: 6, background: "rgba(255,255,255,0.02)", marginBottom: 10 }}>
+                            <div style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                              {typeof examMA.result === "string" ? examMA.result : (() => {
+                                try {
+                                  const r = typeof examMA.result === "object" ? examMA.result : {};
+                                  const parts = [];
+                                  if (r.strengths) parts.push("Strengths: " + (Array.isArray(r.strengths) ? r.strengths.join(", ") : r.strengths));
+                                  if (r.did_well) parts.push("Did well: " + (Array.isArray(r.did_well) ? r.did_well.join(", ") : r.did_well));
+                                  if (r.gaps) parts.push("Gaps: " + (Array.isArray(r.gaps) ? r.gaps.join(", ") : r.gaps));
+                                  if (r.opportunity) parts.push("Opportunity: " + (Array.isArray(r.opportunity) ? r.opportunity.join(", ") : r.opportunity));
+                                  if (r.key_learning) parts.push("Key focus: " + r.key_learning);
+                                  return parts.length > 0 ? parts.join("\n\n") : JSON.stringify(r, null, 2);
+                                } catch(e) { return String(examMA.result); }
+                              })()}
+                            </div>
                           </div>
                         )}
-
-                        {/* Opportunity to improve */}
-                        {(p.opportunity?.length > 0 || p.gaps?.length > 0) && (
-                          <div style={{ marginBottom: 6, padding: "6px 8px", borderRadius: 4, background: "rgba(224,120,48,0.06)", border: "1px solid rgba(224,120,48,0.12)" }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>OPPORTUNITY TO IMPROVE: </span>
-                            <span style={{ fontSize: 12, color: "#d0d8e0" }}>{(p.opportunity || p.gaps || []).join(" · ")}</span>
-                          </div>
-                        )}
-
-                        {p.improvements?.length > 0 && <div style={{ marginBottom: 6 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#3088cc" }}>IMPROVED VS PREVIOUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{p.improvements.join(" · ")}</span></div>}
-                        {p.key_learning && <div style={{ padding: "8px 10px", borderRadius: 5, background: "rgba(224,120,48,0.06)", border: "1px solid rgba(224,120,48,0.15)", marginTop: 6 }}><span style={{ fontSize: 11, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 13, color: "#d0d8e0" }}>{p.key_learning}</span></div>}
 
                         {/* All attempts comparison */}
-                        {examMA.attempts.length > 1 && (
+                        {examMA.attempts.length > 1 && examMA.attempts.some(a => a.scores) && (
                           <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 6, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
                             <div style={{ fontSize: 11, fontWeight: 700, color: "#7a9ab5", marginBottom: 6 }}>ALL ATTEMPTS</div>
                             {examMA.attempts.map((a, ai) => {
@@ -3242,7 +3289,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                             const best = bestAttempt;
                             const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
                             const debriefText = examMA.debriefMessages.map(m => `${m.role === "user" ? "Mark" : "Examiner"}: ${m.content}`).join("\n");
-                            const fullTranscript = `PRIVATE NOTES:\n${examMA.observations}\nRoot cause: ${examMA.rootCause}\n\nPEER DIALOG:\n${dialogText}\n\nPRESCRIPTION:\n${examMA.prescription}\nReasoning: ${examMA.prescriptionReason}\n\nPRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}`;
+                            const fullTranscript = `PRIVATE NOTES:\n${examMA.observations}\nRoot cause: ${examMA.rootCause}\n\nPEER DIALOG:\n${dialogText}\n\nPRESCRIPTION DELIVERED TO PEER:\n${examMA.prescription}\n\nPRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}`;
 
                             // Build summary with best scores + all attempt feedback
                             const summaryObj = {
@@ -3274,9 +3321,9 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                           }} style={{
                             flex: 1, padding: "10px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer",
                             background: "rgba(40,168,88,0.08)", border: "1px solid rgba(40,168,88,0.25)", color: "#28a858",
-                          }}>Save Best Score & Finish</button>
+                          }}>{ examMA.attempts.length === 1 ? "Accept Score & Finish" : "Save Best Score & Finish"}</button>
                         </div>
-                        <div style={{ fontSize: 10, color: "#28a858", marginTop: 6, textAlign: "center" }}>Best score saved to MA History · Mentors can review all attempts and add feedback</div>
+                        <div style={{ fontSize: 10, color: "#28a858", marginTop: 6, textAlign: "center" }}>Saved to MA History · Mentors can review and add feedback</div>
                       </div>
                     );
                   })()}

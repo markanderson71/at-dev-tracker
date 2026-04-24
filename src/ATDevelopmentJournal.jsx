@@ -164,6 +164,20 @@ function apiCreate(s, d) { return apiPost("create", s, d); }
 function apiUpdate(s, d) { return apiPost("update", s, d); }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
+const parseAIJson = (resp) => {
+  try {
+    let clean = (resp || "").replace(/```json|```/g, "").trim();
+    const jsonStart = clean.indexOf("{");
+    const jsonEnd = clean.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd > jsonStart) {
+      clean = clean.slice(jsonStart, jsonEnd + 1);
+    }
+    return JSON.parse(clean);
+  } catch(e) {
+    // Try to extract useful fields from text
+    return { raw: resp, scores: null };
+  }
+};
 const today = () => new Date().toISOString().split("T")[0];
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1710,15 +1724,9 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                       setAnalyzingMA(s.id);
                       const input = `MY MA:\n${s.transcript}\n\n${s.notes ? `MENTOR FEEDBACK:\n${s.notes}` : ""}\n\nContext: ${s.context || ""}, Analyzing: ${s.who || ""}, Activity: ${s.activity || ""}`;
                       const resp = await callClaude([{ role: "user", content: input }], MA_ANALYZER_SYSTEM);
-                      try {
-                        const clean = resp.replace(/```json|```/g, "").trim();
-                        const parsed = JSON.parse(clean);
-                        const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(parsed) } : x);
-                        saveMaSessions(updated);
-                      } catch(e) {
-                        const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: resp } : x);
-                        saveMaSessions(updated);
-                      }
+                      const parsed = parseAIJson(resp);
+                      const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(parsed) } : x);
+                      saveMaSessions(updated);
                       setAnalyzingMA(null);
                     }} disabled={analyzingMA === s.id || !s.transcript?.trim()} style={{
                       padding: "6px 14px", borderRadius: 5, fontSize: 12, fontWeight: 700,
@@ -2338,9 +2346,15 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
               </Card>
             ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
               let aiScores = null;
-              try { aiScores = s.summary ? (typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary) : null; } catch(e) {}
+              try { 
+                aiScores = s.summary ? (typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary) : null;
+                // Handle wrapped format with raw text
+                if (aiScores && !aiScores.scores && aiScores.raw) aiScores = null;
+              } catch(e) {}
               const scoreColor = (v) => v >= 4 ? "#28a858" : v >= 3 ? "#e07830" : "#e05028";
               const mentorFeedback = s.mentorFeedback || [];
+              const didWell = aiScores?.did_well || aiScores?.strengths || [];
+              const opportunity = aiScores?.opportunity || aiScores?.gaps || [];
 
               return (
                 <Card key={s.id} style={{ borderLeft: "3px solid #c060a0" }}>
@@ -2379,9 +2393,14 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                     <details style={{ marginBottom: 8 }}>
                       <summary style={{ fontSize: 12, color: "#a0a0d0", cursor: "pointer", fontWeight: 600 }}>AI analysis</summary>
                       <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(160,160,208,0.04)", marginTop: 4 }}>
-                        {aiScores.strengths?.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>STRENGTHS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{aiScores.strengths.join(" · ")}</span></div>}
-                        {aiScores.gaps?.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>GAPS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{aiScores.gaps.join(" · ")}</span></div>}
+                        {didWell.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT YOU DID WELL: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{didWell.join(" · ")}</span></div>}
+                        {opportunity.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>OPPORTUNITY TO IMPROVE: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{opportunity.join(" · ")}</span></div>}
                         {aiScores.key_learning && <div><span style={{ fontSize: 10, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{aiScores.key_learning}</span></div>}
+                        {aiScores.allAttempts?.length > 1 && (
+                          <div style={{ marginTop: 6, fontSize: 11, color: "#7a9ab5" }}>
+                            {aiScores.allAttempts.length - 1} revision{aiScores.allAttempts.length > 2 ? "s" : ""} · Best: {aiScores.bestAttempt === 1 ? "initial" : `revision ${aiScores.bestAttempt - 1}`}
+                          </div>
+                        )}
                       </div>
                     </details>
                   )}
@@ -2849,8 +2868,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
 
                           const input = `INITIAL MA:\n${writtenMA.transcript}\n\nEXAMINER DIALOG:\n${dialogText}${pastContext}\n\nContext: ${writtenMA.who || ""}, ${writtenMA.activity || ""}, ${writtenMA.conditions || ""}`;
                           const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
-                          let parsed = null;
-                          try { parsed = JSON.parse(resp.replace(/```json|```/g, "").trim()); } catch(e) { parsed = resp; }
+                          const parsed = parseAIJson(resp);
                           setWrittenMAResult(parsed);
                           setWrittenMAPhase("scored");
 
@@ -2877,24 +2895,33 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                   {/* Phase 4: Scored — results with trends */}
                   {writtenMAPhase === "scored" && writtenMAResult && (() => {
                     const p = typeof writtenMAResult === "object" ? writtenMAResult : null;
-                    if (!p || !p.scores) return <div style={{ padding: "12px", borderRadius: 8, background: "rgba(160,160,208,0.04)", fontSize: 13, color: "#d0d8e0", whiteSpace: "pre-wrap" }}>{typeof writtenMAResult === "string" ? writtenMAResult : JSON.stringify(writtenMAResult)}</div>;
+                    const hasScores = p?.scores;
                     const scoreColor = (v) => v >= 4 ? "#28a858" : v >= 3 ? "#e07830" : "#e05028";
+                    const didWell = p?.did_well || p?.strengths || [];
+                    const opp = p?.opportunity || p?.gaps || [];
                     return (
                       <div style={{ padding: "14px", borderRadius: 8, background: "rgba(160,160,208,0.04)", border: "1px solid rgba(160,160,208,0.1)" }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#a0a0d0", marginBottom: 10 }}>AT SCORECARD — {today()}</div>
-                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-                          {[{ key: "describe", label: "Describe" }, { key: "cause_effect", label: "Cause/Effect" }, { key: "evaluate", label: "Evaluate" }, { key: "prescription", label: "Prescription" }, { key: "biomechanics", label: "Bio/Physics" }, { key: "communication", label: "Comm" }].map(sc => (
-                            <div key={sc.key} style={{ textAlign: "center", minWidth: 50 }}>
-                              <div style={{ fontSize: 22, fontWeight: 800, color: scoreColor(p.scores[sc.key] || 0) }}>{p.scores[sc.key] || "—"}</div>
-                              <div style={{ fontSize: 9, color: "#7a9ab5", fontWeight: 600 }}>{sc.label}</div>
+                        {hasScores ? (
+                          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+                            {[{ key: "describe", label: "Describe" }, { key: "cause_effect", label: "Cause/Effect" }, { key: "evaluate", label: "Evaluate" }, { key: "prescription", label: "Prescription" }, { key: "biomechanics", label: "Bio/Physics" }, { key: "communication", label: "Comm" }].map(sc => (
+                              <div key={sc.key} style={{ textAlign: "center", minWidth: 50 }}>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: scoreColor(p.scores[sc.key] || 0) }}>{p.scores[sc.key] || "—"}</div>
+                                <div style={{ fontSize: 9, color: "#7a9ab5", fontWeight: 600 }}>{sc.label}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ padding: "10px 12px", borderRadius: 6, background: "rgba(255,255,255,0.02)", marginBottom: 10 }}>
+                            <div style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                              {p?.raw || (typeof writtenMAResult === "string" ? writtenMAResult : JSON.stringify(writtenMAResult, null, 2))}
                             </div>
-                          ))}
-                        </div>
-                        {p.strengths?.length > 0 && <div style={{ marginBottom: 6 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>STRENGTHS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{p.strengths.join(" · ")}</span></div>}
-                        {p.gaps?.length > 0 && <div style={{ marginBottom: 6 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>GAPS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{p.gaps.join(" · ")}</span></div>}
-                        {p.improvements?.length > 0 && <div style={{ marginBottom: 6, padding: "6px 8px", borderRadius: 4, background: "rgba(40,168,88,0.06)", border: "1px solid rgba(40,168,88,0.12)" }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>IMPROVED VS PREVIOUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{p.improvements.join(" · ")}</span></div>}
-                        {p.persistent_gaps?.length > 0 && <div style={{ marginBottom: 6, padding: "6px 8px", borderRadius: 4, background: "rgba(224,120,48,0.06)", border: "1px solid rgba(224,120,48,0.12)" }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>PERSISTENT GAPS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{p.persistent_gaps.join(" · ")}</span></div>}
-                        {p.key_learning && <div style={{ padding: "8px 10px", borderRadius: 5, background: "rgba(224,120,48,0.06)", border: "1px solid rgba(224,120,48,0.15)", marginTop: 8 }}><span style={{ fontSize: 11, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 13, color: "#d0d8e0" }}>{p.key_learning}</span></div>}
+                          </div>
+                        )}
+                        {didWell.length > 0 && <div style={{ marginBottom: 6, padding: "6px 8px", borderRadius: 4, background: "rgba(40,168,88,0.06)", border: "1px solid rgba(40,168,88,0.12)" }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT YOU DID WELL: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{didWell.join(" · ")}</span></div>}
+                        {opp.length > 0 && <div style={{ marginBottom: 6, padding: "6px 8px", borderRadius: 4, background: "rgba(224,120,48,0.06)", border: "1px solid rgba(224,120,48,0.12)" }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>OPPORTUNITY TO IMPROVE: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{opp.join(" · ")}</span></div>}
+                        {p?.improvements?.length > 0 && <div style={{ marginBottom: 6 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#3088cc" }}>IMPROVED VS PREVIOUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{p.improvements.join(" · ")}</span></div>}
+                        {p?.key_learning && <div style={{ padding: "8px 10px", borderRadius: 5, background: "rgba(224,120,48,0.06)", border: "1px solid rgba(224,120,48,0.15)", marginTop: 8 }}><span style={{ fontSize: 11, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 13, color: "#d0d8e0" }}>{p.key_learning}</span></div>}
                         <div style={{ fontSize: 10, color: "#28a858", marginTop: 10 }}>Saved to MA Sessions · Feeds into Growth matrix</div>
 
                         <button onClick={() => {
@@ -3163,8 +3190,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                           }
                           const input = `FULL AT MA EXAM SESSION:\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERED TO PEER:\n${examMA.prescription}\n\nEXAMINER Q&A:\n${debriefText}\n\nMARK'S PRIVATE NOTES (for comparison — did he articulate everything he saw?):\nObservations: ${examMA.observations}\nRoot cause: ${examMA.rootCause}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nIMPORTANT: Score based on what Mark PRESENTED and how he handled the Q&A, not just his private notes. Evaluate TWO aspects of the prescription: (1) Did he connect the task to the subject's intent when delivering it? (2) Did he explain the technical WHY to the examiner — biomechanics, physics, skill relationships? If his private notes show deeper thinking than his presentation, that's a gap in communication. In your response JSON, include two additional fields:\n"did_well": ["list of specific things Mark did well in this MA"]\n"opportunity": ["list of specific areas where Mark can improve"]`;
                           const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
-                          let parsed = null;
-                          try { parsed = JSON.parse(resp.replace(/```json|```/g, "").trim()); } catch(e) { parsed = resp; }
+                          const parsed = parseAIJson(resp);
 
                           // Add to attempts
                           const newAttempt = typeof parsed === "object" ? { ...parsed, timestamp: new Date().toISOString(), attemptNum: examMA.attemptNumber } : { raw: parsed, timestamp: new Date().toISOString(), attemptNum: examMA.attemptNumber };

@@ -716,6 +716,8 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
     attemptNumber: 1,
   });
   const [examMALoading, setExamMALoading] = useState(false);
+  const [aiAssessmentLoading, setAiAssessmentLoading] = useState(false);
+  const [aiAssessmentResult, setAiAssessmentResult] = useState(null);
   const [challengeLoading, setChallengeLoading] = useState(false);
   const [challengeResponse, setChallengeResponse] = useState(null);
   const [analyzingMA, setAnalyzingMA] = useState(null); // session id being analyzed
@@ -1076,8 +1078,8 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
   const isMentor = currentUser?.role === "mentor";
   const isCandidate = currentUser?.role === "candidate";
 
-  const CANDIDATE_TABS = ["journal", "themes", "resources", "growth", "checkpoints", "videos", "mahistory", "timeline", "clinics", "sparring"];
-  const MENTOR_TABS = ["journal", "themes", "growth", "checkpoints", "videos", "mahistory", "timeline"];
+  const CANDIDATE_TABS = ["journal", "themes", "resources", "growth", "progress", "checkpoints", "videos", "mahistory", "timeline", "clinics", "sparring"];
+  const MENTOR_TABS = ["journal", "themes", "growth", "progress", "checkpoints", "videos", "mahistory", "timeline"];
   const VISIBLE_TABS = isCandidate ? CANDIDATE_TABS : MENTOR_TABS;
 
   // ── Styles (aliased from constants for brevity) ──
@@ -1186,6 +1188,7 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
                 { id: "themes", label: "Themes" },
                 { id: "resources", label: "Resources" },
                 { id: "growth", label: "Growth" },
+                { id: "progress", label: "Progress" },
                 { id: "checkpoints", label: "Checkpoints" },
                 { id: "videos", label: `Videos (${videos.length})` },
                 { id: "mahistory", label: `MA History (${maSessions.length})` },
@@ -2063,6 +2066,180 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
           );
         })()}
 
+        {/* ═══ PROGRESS ═══ */}
+        {tab === "progress" && !isSubView && (
+          <>
+            <div style={{ fontSize: 14, color: "#7a9ab5", marginBottom: 14, lineHeight: 1.5 }}>
+              {isMentor
+                ? "Your development assessment of Mark. This is the most important input for the AI — the sparring partner reads it every time Mark practices. Update it as he progresses."
+                : "Your mentors' development assessments. These directly shape the AI sparring partner's coaching."}
+            </div>
+
+            {/* Mentor editable assessment */}
+            {isMentor && (
+              <>
+                <Card style={{ borderLeft: "3px solid #28a858", marginBottom: 12 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#28a858", marginBottom: 4 }}>Your Development Assessment of Mark</div>
+                  {[
+                    { key: "whatsWorking", label: "What's working", placeholder: "What is Mark doing well? What's consistent? What should he keep doing?" },
+                    { key: "consistentGaps", label: "Consistent gaps", placeholder: "What patterns keep showing up? Where does he repeatedly fall short of AT level?" },
+                    { key: "progress", label: "Progress I've noticed", placeholder: "How has Mark's thinking evolved? What's improved since we started working together?" },
+                  ].map(field => (
+                    <div key={field.key} style={{ marginBottom: 8 }}>
+                      <label style={lbl}>{field.label}</label>
+                      <textarea
+                        value={(mentorAssessments[currentUser.key] || {})[field.key] || ""}
+                        onChange={ev => {
+                          const updated = {
+                            ...mentorAssessments,
+                            [currentUser.key]: {
+                              ...(mentorAssessments[currentUser.key] || {}),
+                              [field.key]: ev.target.value,
+                              lastUpdated: today(),
+                            }
+                          };
+                          setMentorAssessments(updated);
+                          if (saveTimerRef.current._ma) clearTimeout(saveTimerRef.current._ma);
+                          saveTimerRef.current._ma = setTimeout(() => saveMentorAssessments(updated), 1500);
+                        }}
+                        placeholder={field.placeholder}
+                        style={{ ...txta, fontSize: 13, minHeight: 50 }}
+                      />
+                    </div>
+                  ))}
+                  {mentorAssessments[currentUser.key]?.lastUpdated && (
+                    <div style={{ fontSize: 10, color: "#4d6888" }}>Last updated: {mentorAssessments[currentUser.key].lastUpdated} · Auto-saves</div>
+                  )}
+                </Card>
+
+                {/* AI-generated assessment suggestion */}
+                <Card style={{ borderLeft: "3px solid #c060a0" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#c060a0", marginBottom: 4 }}>AI Analysis of Mark's Development</div>
+                  <div style={{ fontSize: 12, color: "#7a9ab5", marginBottom: 8, lineHeight: 1.4 }}>
+                    Generate an AI analysis based on Mark's MA sessions, journal reflections, and existing feedback. Review it, then use what resonates to update your assessment above.
+                  </div>
+                  <button onClick={async () => {
+                    setAiAssessmentLoading(true);
+                    setAiAssessmentResult(null);
+
+                    // Gather MA sessions data
+                    let maContext = "";
+                    const recentMA = [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 8);
+                    if (recentMA.length > 0) {
+                      maContext = "MA SESSIONS:\n";
+                      recentMA.forEach(s => {
+                        maContext += `\n[${s.date} · ${s.context || ""} · ${s.who || ""} · ${s.activity || ""}]`;
+                        if (s.summary) {
+                          try {
+                            const p = typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary;
+                            if (p.scores) maContext += `\nScores: D=${p.scores.describe} C/E=${p.scores.cause_effect} E=${p.scores.evaluate} P=${p.scores.prescription} B=${p.scores.biomechanics} Co=${p.scores.communication}`;
+                            if (p.did_well) maContext += `\nDid well: ${(Array.isArray(p.did_well) ? p.did_well : [p.did_well]).join(", ")}`;
+                            if (p.opportunity) maContext += `\nOpportunity: ${(Array.isArray(p.opportunity) ? p.opportunity : [p.opportunity]).join(", ")}`;
+                            if (p.gaps) maContext += `\nGaps: ${(Array.isArray(p.gaps) ? p.gaps : [p.gaps]).join(", ")}`;
+                            if (p.key_learning) maContext += `\nKey focus: ${p.key_learning}`;
+                          } catch(e) {}
+                        }
+                        const fb = s.mentorFeedback || [];
+                        if (fb.length > 0) {
+                          maContext += "\nMentor feedback:";
+                          fb.forEach(f => { maContext += `\n  ${USERS[f.userId]?.name || f.userId}: ${f.text.slice(0, 200)}`; });
+                        }
+                      });
+                    }
+
+                    // Gather journal entries
+                    let journalContext = "";
+                    const recentEntries = [...entries].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 8);
+                    if (recentEntries.length > 0) {
+                      journalContext = "\n\nJOURNAL REFLECTIONS:\n";
+                      recentEntries.forEach(e => {
+                        const pulseValues = Object.entries(e.mentorPulse || {}).filter(([, v]) => v);
+                        const depthLabels = { surface: "Surface", connecting: "Connecting", integrated: "Integrated" };
+                        journalContext += `\n[${e.date} · ${e.context}]`;
+                        if (e.whatISaw) journalContext += `\nSaw: ${e.whatISaw.slice(0, 200)}`;
+                        if (e.whatWasGoingOn) journalContext += `\nRoot cause: ${e.whatWasGoingOn.slice(0, 200)}`;
+                        if (pulseValues.length > 0) journalContext += `\nMentor depth: ${pulseValues.map(([k, v]) => `${USERS[k]?.name || k}: ${depthLabels[v] || v}`).join(", ")}`;
+                        const comments = e.mentorComments || [];
+                        if (comments.length > 0) comments.slice(-2).forEach(c => { journalContext += `\n  ${USERS[c.userId]?.name || c.userId}: ${(c.text || "").slice(0, 150)}`; });
+                      });
+                    }
+
+                    // Current assessment for context
+                    let currentAssessment = "";
+                    const myAssessment = mentorAssessments[currentUser.key];
+                    if (myAssessment?.whatsWorking || myAssessment?.consistentGaps || myAssessment?.progress) {
+                      currentAssessment = `\n\nYOUR CURRENT ASSESSMENT:\nWhat's working: ${myAssessment.whatsWorking || "(empty)"}\nConsistent gaps: ${myAssessment.consistentGaps || "(empty)"}\nProgress: ${myAssessment.progress || "(empty)"}`;
+                    }
+
+                    const prompt = `You are helping an AT examiner/mentor update their development assessment of Mark, an L3 instructor pursuing AT certification.
+
+Based on the data below, produce an updated assessment in THREE sections. Be specific — reference actual sessions, scores, patterns, and growth. Write as if you are the mentor speaking.
+
+${maContext}${journalContext}${currentAssessment}
+
+Respond in this exact format (plain text, not JSON):
+
+WHAT'S WORKING:
+[specific things Mark is doing well, with evidence from sessions]
+
+CONSISTENT GAPS:
+[patterns that keep showing up, with specific examples]
+
+PROGRESS I'VE NOTICED:
+[how Mark's thinking has evolved over time, what's improved, what shifted]`;
+
+                    const resp = await callClaude([{ role: "user", content: prompt }], AT_COACH_SYSTEM);
+                    setAiAssessmentResult(resp);
+                    setAiAssessmentLoading(false);
+                  }} disabled={aiAssessmentLoading || (maSessions.length === 0 && entries.length === 0)} style={{
+                    width: "100%", padding: "10px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: aiAssessmentLoading ? "default" : "pointer",
+                    background: aiAssessmentLoading ? "rgba(255,255,255,0.03)" : "rgba(192,96,160,0.08)",
+                    border: "1px solid rgba(192,96,160,0.25)", color: aiAssessmentLoading ? "#4d6888" : "#c060a0",
+                  }}>{aiAssessmentLoading ? "Analyzing Mark's sessions and reflections..." : "Generate AI Analysis"}</button>
+
+                  {aiAssessmentResult && (
+                    <div style={{ marginTop: 10, padding: "12px 14px", borderRadius: 8, background: "rgba(192,96,160,0.04)", border: "1px solid rgba(192,96,160,0.1)" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#c060a0", marginBottom: 6, textTransform: "uppercase" }}>AI Suggested Assessment</div>
+                      <div style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiAssessmentResult}</div>
+                      <div style={{ fontSize: 10, color: "#7a9ab5", marginTop: 8 }}>Review this analysis and use what resonates to update your assessment above. You are the ground truth — the AI is suggesting, not deciding.</div>
+                    </div>
+                  )}
+                </Card>
+              </>
+            )}
+
+            {/* Mark sees mentor assessments (read-only) */}
+            {isCandidate && Object.entries(mentorAssessments).some(([, v]) => v?.whatsWorking || v?.consistentGaps || v?.progress) && (
+              <Card style={{ borderLeft: "3px solid #28a858" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#28a858", marginBottom: 8 }}>Mentor Development Assessments</div>
+                {Object.entries(mentorAssessments).filter(([, v]) => v?.whatsWorking || v?.consistentGaps || v?.progress).map(([key, a]) => {
+                  const mentor = USERS[key] || { name: key, color: "#7a9ab5" };
+                  return (
+                    <div key={key} style={{ marginBottom: 12, padding: "10px 12px", borderRadius: 8, background: `${mentor.color}06`, border: `1px solid ${mentor.color}12` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <div style={{ width: 22, height: 22, borderRadius: "50%", background: `${mentor.color}20`, border: `1.5px solid ${mentor.color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: mentor.color }}>{mentor.name[0]}</div>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: mentor.color }}>{mentor.name}</span>
+                        {a.lastUpdated && <span style={{ fontSize: 10, color: "#4d6888" }}>Updated {a.lastUpdated}</span>}
+                      </div>
+                      {a.whatsWorking && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT'S WORKING: </span><span style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5 }}>{a.whatsWorking}</span></div>}
+                      {a.consistentGaps && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>CONSISTENT GAPS: </span><span style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5 }}>{a.consistentGaps}</span></div>}
+                      {a.progress && <div><span style={{ fontSize: 10, fontWeight: 700, color: "#3088cc" }}>PROGRESS: </span><span style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5 }}>{a.progress}</span></div>}
+                    </div>
+                  );
+                })}
+              </Card>
+            )}
+
+            {isCandidate && !Object.entries(mentorAssessments).some(([, v]) => v?.whatsWorking || v?.consistentGaps || v?.progress) && (
+              <Card style={{ textAlign: "center", padding: "50px 20px" }}>
+                <div style={{ fontSize: 40, opacity: 0.4 }}>📊</div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "#7a9ab5", marginTop: 8 }}>No assessments yet</div>
+                <div style={{ fontSize: 14, color: "#3a5068", marginTop: 4 }}>Your mentors will add their development assessments here.</div>
+              </Card>
+            )}
+          </>
+        )}
+
         {/* ═══ CHECKPOINTS ═══ */}
         {tab === "checkpoints" && !isSubView && (
           <>
@@ -2269,72 +2446,9 @@ Performance: Adjust/adapt fundamentals at all speeds for training needs (inspira
           <>
             <div style={{ fontSize: 14, color: "#7a9ab5", marginBottom: 14, lineHeight: 1.5 }}>
               {isMentor
-                ? "Review Mark's MA sessions and maintain your development assessment. Your assessment directly shapes the AI sparring partner."
-                : "Your MA practice history. Mentors maintain development assessments that calibrate the AI sparring partner."}
+                ? "Review Mark's MA sessions. Add feedback to calibrate the AI sparring partner."
+                : "Your MA practice history. Mentors can review and add feedback."}
             </div>
-
-            {/* Mentor Development Assessment */}
-            {isMentor && (
-              <Card style={{ borderLeft: "3px solid #28a858", marginBottom: 16 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#28a858", marginBottom: 4 }}>Your Development Assessment of Mark</div>
-                <div style={{ fontSize: 12, color: "#7a9ab5", marginBottom: 10, lineHeight: 1.4 }}>
-                  This is the most important input for the AI. Update it as Mark progresses — the sparring partner reads this every time Mark practices.
-                </div>
-                {[
-                  { key: "whatsWorking", label: "What's working", placeholder: "What is Mark doing well? What's consistent? What should he keep doing?" },
-                  { key: "consistentGaps", label: "Consistent gaps", placeholder: "What patterns keep showing up? Where does he repeatedly fall short of AT level?" },
-                  { key: "progress", label: "Progress I've noticed", placeholder: "How has Mark's thinking evolved? What's improved since we started working together?" },
-                ].map(field => (
-                  <div key={field.key} style={{ marginBottom: 8 }}>
-                    <label style={lbl}>{field.label}</label>
-                    <textarea
-                      value={(mentorAssessments[currentUser.key] || {})[field.key] || ""}
-                      onChange={ev => {
-                        const updated = {
-                          ...mentorAssessments,
-                          [currentUser.key]: {
-                            ...(mentorAssessments[currentUser.key] || {}),
-                            [field.key]: ev.target.value,
-                            lastUpdated: today(),
-                          }
-                        };
-                        setMentorAssessments(updated);
-                        if (saveTimerRef.current._ma) clearTimeout(saveTimerRef.current._ma);
-                        saveTimerRef.current._ma = setTimeout(() => saveMentorAssessments(updated), 1500);
-                      }}
-                      placeholder={field.placeholder}
-                      style={{ ...txta, fontSize: 13, minHeight: 50 }}
-                    />
-                  </div>
-                ))}
-
-                {mentorAssessments[currentUser.key]?.lastUpdated && (
-                  <div style={{ fontSize: 10, color: "#4d6888" }}>Last updated: {mentorAssessments[currentUser.key].lastUpdated} · Auto-saves</div>
-                )}
-              </Card>
-            )}
-
-            {/* Mark sees mentor assessments (read-only) */}
-            {isCandidate && Object.entries(mentorAssessments).some(([, v]) => v?.whatsWorking || v?.consistentGaps || v?.progress) && (
-              <Card style={{ borderLeft: "3px solid #28a858", marginBottom: 16 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#28a858", marginBottom: 8 }}>Mentor Development Assessments</div>
-                {Object.entries(mentorAssessments).filter(([, v]) => v?.whatsWorking || v?.consistentGaps || v?.progress).map(([key, a]) => {
-                  const mentor = USERS[key] || { name: key, color: "#7a9ab5" };
-                  return (
-                    <div key={key} style={{ marginBottom: 12, padding: "10px 12px", borderRadius: 8, background: `${mentor.color}06`, border: `1px solid ${mentor.color}12` }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <div style={{ width: 22, height: 22, borderRadius: "50%", background: `${mentor.color}20`, border: `1.5px solid ${mentor.color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: mentor.color }}>{mentor.name[0]}</div>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: mentor.color }}>{mentor.name}</span>
-                        {a.lastUpdated && <span style={{ fontSize: 10, color: "#4d6888" }}>Updated {a.lastUpdated}</span>}
-                      </div>
-                      {a.whatsWorking && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT'S WORKING: </span><span style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5 }}>{a.whatsWorking}</span></div>}
-                      {a.consistentGaps && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>CONSISTENT GAPS: </span><span style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5 }}>{a.consistentGaps}</span></div>}
-                      {a.progress && <div><span style={{ fontSize: 10, fontWeight: 700, color: "#3088cc" }}>PROGRESS: </span><span style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5 }}>{a.progress}</span></div>}
-                    </div>
-                  );
-                })}
-              </Card>
-            )}
 
             {maSessions.length === 0 ? (
               <Card style={{ textAlign: "center", padding: "50px 20px" }}>

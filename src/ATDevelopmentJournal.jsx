@@ -471,6 +471,27 @@ async function callClaude(messages, systemOverride) {
 }
 
 // ── Shared UI Components (must be outside main component to avoid remounting) ──
+const ATIcon = ({ size = 28 }) => (
+  <svg viewBox="0 0 300 300" width={size} height={size} style={{ borderRadius: size * 0.2, flexShrink: 0 }}>
+    <rect width="300" height="300" rx="60" fill="#1a2538"/>
+    <polygon points="0,230 90,90 130,130 180,70 240,150 300,230" fill="#2a4060"/>
+    <polygon points="0,230 70,130 120,170 160,110 210,160 300,230" fill="#1e3350"/>
+    <polygon points="0,260 50,170 100,210 140,150 190,190 250,160 300,260" fill="#162840"/>
+    <polygon points="180,70 160,98 170,90 180,100 190,88 200,98" fill="#e0e8f0"/>
+    <polygon points="90,90 75,110 85,104 95,112 105,102" fill="#d0dae6"/>
+    <path d="M60,250 Q90,190 130,170 Q170,150 200,180 Q230,210 250,190" fill="none" stroke="#e07830" strokeWidth="3" strokeLinecap="round"/>
+    <path d="M64,254 Q94,194 134,174 Q174,154 204,184 Q234,214 254,194" fill="none" stroke="#d06060" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+    <text x="150" y="58" textAnchor="middle" fontFamily="system-ui" fontSize="42" fontWeight="500" fill="#e8a050" letterSpacing="8">AT</text>
+    <line x1="80" y1="270" x2="220" y2="270" stroke="#3a5068" strokeWidth="1"/>
+    <line x1="90" y1="282" x2="210" y2="282" stroke="#3a5068" strokeWidth="1"/>
+    <circle cx="95" cy="220" r="3" fill="#28a858" opacity="0.8"/>
+    <circle cx="130" cy="198" r="4" fill="#e07830" opacity="0.9"/>
+    <circle cx="170" cy="182" r="5" fill="#d06060"/>
+    <circle cx="210" cy="192" r="4" fill="#e07830" opacity="0.9"/>
+    <circle cx="240" cy="198" r="3" fill="#28a858" opacity="0.8"/>
+  </svg>
+);
+
 const Card = ({ children, style = {} }) => (
   <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px 14px", marginBottom: 10, ...style }}>{children}</div>
 );
@@ -905,7 +926,7 @@ Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing
   const [examMA, setExamMA] = useState({
     phase: "setup", videoUrl: "", who: "", activity: "", conditions: "",
     observations: "", rootCause: "",
-    dialogMessages: [], prescription: "", prescriptionReason: "",
+    dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [],
     presentation: "",
     debriefMessages: [], result: null,
     attempts: [], // [{ scores, strengths, gaps, improvements, key_learning, timestamp }]
@@ -1290,7 +1311,8 @@ Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
         <div style={{ width: "100%", maxWidth: 340, padding: "0 20px" }}>
           <div style={{ textAlign: "center", marginBottom: 30 }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#e8a050", letterSpacing: "-0.03em" }}>AT Journal</div>
+            <ATIcon size={64} />
+            <div style={{ fontSize: 28, fontWeight: 800, color: "#e8a050", letterSpacing: "-0.03em", marginTop: 12 }}>AT Journal</div>
             <div style={{ fontSize: 14, color: "#7a9ab5", marginTop: 6 }}>Alpine Trainer Development</div>
           </div>
           {Object.entries(USERS).map(([key, user]) => (
@@ -1365,7 +1387,8 @@ Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", padding: "18px 16px 12px", background: "rgba(255,255,255,0.01)" }}>
         <div className="at-container">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <ATIcon size={28} />
               <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.04em", color: "#f0f4f8" }}>AT Journal</span>
               <span style={{ fontSize: 13, color: "#4d6888", fontWeight: 500 }}>Mark · Keystone</span>
             </div>
@@ -2907,7 +2930,7 @@ PROGRESS I'VE NOTICED:
                     setWrittenMADialog([]);
                     setWrittenMAPhase("setup");
                     setWrittenMA({ who: "", activity: "", conditions: "", transcript: "", videoUrl: "" });
-                    setExamMA({ phase: "setup", videoUrl: "", who: "", activity: "", conditions: "", observations: "", rootCause: "", dialogMessages: [], prescription: "", prescriptionReason: "", presentation: "", debriefMessages: [], result: null, attempts: [], attemptNumber: 1 });
+                    setExamMA({ phase: "setup", videoUrl: "", who: "", activity: "", conditions: "", observations: "", rootCause: "", dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [], presentation: "", debriefMessages: [], result: null, attempts: [], attemptNumber: 1 });
                   }
                 }} style={{
                   padding: "6px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
@@ -3359,24 +3382,78 @@ PROGRESS I'VE NOTICED:
                     </>
                   )}
 
-                  {/* Phase 4: Prescription */}
+                  {/* Phase 4: Prescription — delivered as dialog with peer */}
                   {examMA.phase === "prescribe" && (
                     <>
                       <div style={{ fontSize: 13, color: "#d06060", fontWeight: 600, marginBottom: 4 }}>Step 4: Prescribe to the subject</div>
                       <div style={{ fontSize: 12, color: "#7a9ab5", marginBottom: 8, lineHeight: 1.5 }}>
-                        Deliver your prescription to the instructor. This is NOT a coaching moment — but you do need to connect the task to their stated intent so they understand the relevance.
+                        Deliver your prescription as you would to the instructor. Include the IDP task, variations, terrain, and connect it to their stated intent. This is NOT a coaching moment — but they need to understand WHY this task is relevant to what they're working on.
                       </div>
-                      <div style={{ marginBottom: 8 }}>
-                        <label style={lbl}>IDP task, variations, and how it connects to their focus</label>
-                        <textarea value={examMA.prescription} onChange={ev => setExamMA(p => ({ ...p, prescription: ev.target.value }))} placeholder={"Deliver this as you would to the instructor:\n\n\"Based on our conversation about your steering, I'd like to have you try pivot slips into railroad track turns. The pivot slip will help you feel the edge engage earlier in the turn — and that earlier grip is what will make your steering more effective. Let's start on Schoolmarm, then move to Last Alley to add pitch. Variations: pause at edge change, change speed...\""} style={{ ...txta, minHeight: 100, fontSize: 14, lineHeight: 1.7 }} />
+
+                      <details style={{ marginBottom: 6 }}><summary style={{ fontSize: 11, color: "#4d6888", cursor: "pointer" }}>Previous dialog (review)</summary><div style={{ padding: "6px 8px", borderRadius: 5, background: "rgba(255,255,255,0.02)", fontSize: 12, color: "#d0d8e0", maxHeight: 150, overflowY: "auto", marginTop: 4 }}>{examMA.dialogMessages.map((m, i) => <div key={i} style={{ marginBottom: 4 }}><span style={{ fontWeight: 600, color: m.role === "user" ? "#d06060" : "#7a9ab5" }}>{m.role === "user" ? "Mark: " : "Peer: "}</span>{m.content}</div>)}</div></details>
+
+                      {/* Prescription dialog messages */}
+                      <div style={{ marginBottom: 8, maxHeight: 250, overflowY: "auto" }}>
+                        {(examMA.prescriptionDialog || []).map((m, i) => (
+                          <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 6 }}>
+                            <div style={{ maxWidth: "85%", padding: "8px 12px", borderRadius: 10, background: m.role === "user" ? "rgba(208,96,96,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${m.role === "user" ? "rgba(208,96,96,0.15)" : "rgba(255,255,255,0.06)"}` }}>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: m.role === "user" ? "#d06060" : "#7a9ab5", marginBottom: 2 }}>{m.role === "user" ? "Mark (trainer)" : `${examMA.who} (peer)`}</div>
+                              <div style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{m.content}</div>
+                            </div>
+                          </div>
+                        ))}
+                        {examMALoading && <div style={{ fontSize: 12, color: "#7a9ab5", padding: "4px" }}>Peer is responding...</div>}
                       </div>
-                      <button onClick={() => {
-                        if (!examMA.prescription.trim()) return;
-                        setExamMA(p => ({ ...p, phase: "present" }));
-                      }} disabled={!examMA.prescription.trim()} style={{
-                        width: "100%", padding: "12px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: examMA.prescription.trim() ? "pointer" : "default",
-                        background: "rgba(208,96,96,0.08)", border: "1px solid rgba(208,96,96,0.25)", color: examMA.prescription.trim() ? "#d06060" : "#4d6888",
-                      }}>Present to Examiner →</button>
+
+                      <div style={{ display: "flex", gap: 6, alignItems: "flex-end", marginBottom: 6 }}>
+                        <textarea id="exam-prescribe-input" placeholder={(examMA.prescriptionDialog || []).length === 0
+                          ? "Deliver your prescription: IDP task, variations, terrain, and how it connects to their focus..."
+                          : "Continue the conversation — respond to the peer's question..."
+                        } style={{ ...txta, minHeight: 36, flex: 1, fontSize: 13 }}
+                          onKeyDown={async ev => {
+                            if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
+                              const text = ev.target.value.trim();
+                              if (!text || examMALoading) return;
+                              const newMsgs = [...(examMA.prescriptionDialog || []), { role: "user", content: text }];
+                              setExamMA(p => ({ ...p, prescriptionDialog: newMsgs, prescription: newMsgs.filter(m => m.role === "user").map(m => m.content).join("\n\n") }));
+                              ev.target.value = "";
+                              setExamMALoading(true);
+                              const prevDialog = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
+                              const context = `You are a ${examMA.who} who just performed ${examMA.activity} on ${examMA.conditions}. You had a dialog with the trainer (Mark) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nKeep responses to 2-3 sentences. Be natural.`;
+                              const msgs = [{ role: "user", content: context }, ...newMsgs];
+                              const resp = await callClaude(msgs, buildSystemPrompt(MA_PEER_DIALOG_SYSTEM));
+                              setExamMA(p => ({ ...p, prescriptionDialog: [...newMsgs, { role: "assistant", content: resp }] }));
+                              setExamMALoading(false);
+                            }
+                          }}
+                        />
+                        <button onClick={async () => {
+                          const el = document.getElementById("exam-prescribe-input");
+                          const text = el.value.trim();
+                          if (!text || examMALoading) return;
+                          const newMsgs = [...(examMA.prescriptionDialog || []), { role: "user", content: text }];
+                          setExamMA(p => ({ ...p, prescriptionDialog: newMsgs, prescription: newMsgs.filter(m => m.role === "user").map(m => m.content).join("\n\n") }));
+                          el.value = "";
+                          setExamMALoading(true);
+                          const prevDialog = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
+                          const context = `You are a ${examMA.who} who just performed ${examMA.activity} on ${examMA.conditions}. You had a dialog with the trainer (Mark) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nKeep responses to 2-3 sentences. Be natural.`;
+                          const msgs = [{ role: "user", content: context }, ...newMsgs];
+                          const resp = await callClaude(msgs, buildSystemPrompt(MA_PEER_DIALOG_SYSTEM));
+                          setExamMA(p => ({ ...p, prescriptionDialog: [...newMsgs, { role: "assistant", content: resp }] }));
+                          setExamMALoading(false);
+                        }} disabled={examMALoading} style={{
+                          padding: "6px 12px", borderRadius: 5, fontSize: 13, fontWeight: 700,
+                          background: "rgba(208,96,96,0.08)", border: "1px solid rgba(208,96,96,0.2)", color: "#d06060", cursor: examMALoading ? "default" : "pointer", flexShrink: 0,
+                        }}>Send</button>
+                      </div>
+                      <div style={{ fontSize: 10, color: "#3a5068", marginBottom: 8 }}>Ctrl+Enter to send</div>
+
+                      {(examMA.prescriptionDialog || []).filter(m => m.role === "user").length >= 1 && (
+                        <button onClick={() => setExamMA(p => ({ ...p, phase: "present" }))} style={{
+                          width: "100%", padding: "12px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer",
+                          background: "rgba(208,96,96,0.08)", border: "1px solid rgba(208,96,96,0.25)", color: "#d06060",
+                        }}>Present to Examiner →</button>
+                      )}
                     </>
                   )}
 
@@ -3404,7 +3481,8 @@ PROGRESS I'VE NOTICED:
                         setExamMALoading(true);
                         setExamMA(p => ({ ...p, phase: "debrief" }));
                         const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                        const fullContext = `THE EXAMINER HEARD THE FOLLOWING:\n\nPEER DIALOG (examiner observed this):\n${dialogText}\n\nMARK'S PRESCRIPTION DELIVERED TO PEER:\n${examMA.prescription}\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nBegin your examiner debrief. You only know what you heard — the peer dialog, the prescription delivery, and Mark's technical presentation. Start by acknowledging one thing Mark did well, then ask your first probing question.`;
+                        const prescribeText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
+                        const fullContext = `THE EXAMINER HEARD THE FOLLOWING:\n\nPEER DIALOG (examiner observed this):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed this conversation):\n${prescribeText}\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nBegin your examiner debrief. You only know what you heard — the peer dialog, the prescription delivery conversation, and Mark's technical presentation. Start by acknowledging one thing Mark did well, then ask your first probing question.`;
                         const resp = await callClaude([{ role: "user", content: fullContext }], buildSystemPrompt(MA_EXAM_DEBRIEF_SYSTEM));
                         setExamMA(p => ({ ...p, debriefMessages: [{ role: "assistant", content: resp }] }));
                         setExamMALoading(false);
@@ -3448,7 +3526,8 @@ PROGRESS I'VE NOTICED:
                               ev.target.value = "";
                               setExamMALoading(true);
                               const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                              const baseContext = `Mark's presentation: ${examMA.presentation}\nPeer dialog: ${dialogText}\nPrescription delivered to peer: ${examMA.prescription}`;
+                              const prescribeText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
+                              const baseContext = `Mark's presentation: ${examMA.presentation}\nPeer dialog: ${dialogText}\nPrescription delivery: ${prescribeText}`;
                               const msgs = [{ role: "user", content: baseContext }, ...newMsgs];
                               const resp = await callClaude(msgs, buildSystemPrompt(MA_EXAM_DEBRIEF_SYSTEM));
                               setExamMA(p => ({ ...p, debriefMessages: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -3465,7 +3544,8 @@ PROGRESS I'VE NOTICED:
                           el.value = "";
                           setExamMALoading(true);
                           const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                          const baseContext = `Mark's presentation: ${examMA.presentation}\nPeer dialog: ${dialogText}\nPrescription delivered to peer: ${examMA.prescription}`;
+                          const prescribeText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
+                              const baseContext = `Mark's presentation: ${examMA.presentation}\nPeer dialog: ${dialogText}\nPrescription delivery: ${prescribeText}`;
                           const msgs = [{ role: "user", content: baseContext }, ...newMsgs];
                           const resp = await callClaude(msgs, buildSystemPrompt(MA_EXAM_DEBRIEF_SYSTEM));
                           setExamMA(p => ({ ...p, debriefMessages: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -3498,7 +3578,8 @@ PROGRESS I'VE NOTICED:
                             });
                             revisionContext += "Score this attempt on its own merits but note what improved from previous attempts.\n";
                           }
-                          const input = `FULL AT MA EXAM SESSION:\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERED TO PEER:\n${examMA.prescription}\n\nEXAMINER Q&A:\n${debriefText}\n\nMARK'S PRIVATE NOTES (for comparison — did he articulate everything he saw?):\nObservations: ${examMA.observations}\nRoot cause: ${examMA.rootCause}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nIMPORTANT: Score based on what Mark PRESENTED and how he handled the Q&A, not just his private notes. Evaluate TWO aspects of the prescription: (1) Did he connect the task to the subject's intent when delivering it? (2) Did he explain the technical WHY to the examiner — biomechanics, physics, skill relationships? If his private notes show deeper thinking than his presentation, that's a gap in communication. In your response JSON, include two additional fields:\n"did_well": ["list of specific things Mark did well in this MA"]\n"opportunity": ["list of specific areas where Mark can improve"]`;
+                          const prescribeText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
+                          const input = `FULL AT MA EXAM SESSION:\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed this conversation):\n${prescribeText}\n\nEXAMINER Q&A:\n${debriefText}\n\nMARK'S PRIVATE NOTES (for comparison — did he articulate everything he saw?):\nObservations: ${examMA.observations}\nRoot cause: ${examMA.rootCause}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nIMPORTANT: Score based on what Mark PRESENTED and how he handled the Q&A, not just his private notes. Evaluate TWO aspects of the prescription: (1) Did he connect the task to the subject's intent when delivering it to the peer? Did the peer understand? (2) Did he explain the technical WHY to the examiner — biomechanics, physics, skill relationships? If his private notes show deeper thinking than his presentation, that's a gap in communication. In your response JSON, include two additional fields:\n"did_well": ["list of specific things Mark did well in this MA"]\n"opportunity": ["list of specific areas where Mark can improve"]`;
                           const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                           const parsed = parseAIJson(resp);
 
@@ -3614,7 +3695,7 @@ PROGRESS I'VE NOTICED:
                         <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
                           {canRetry && (
                             <button onClick={() => {
-                              setExamMA(p => ({ ...p, phase: "dialog", presentation: "", debriefMessages: [], result: null }));
+                              setExamMA(p => ({ ...p, phase: "dialog", prescription: "", prescriptionDialog: [], presentation: "", debriefMessages: [], result: null }));
                             }} style={{
                               flex: 1, padding: "10px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer",
                               background: "rgba(48,136,204,0.08)", border: "1px solid rgba(48,136,204,0.25)", color: "#3088cc",
@@ -3625,7 +3706,8 @@ PROGRESS I'VE NOTICED:
                             const best = bestAttempt;
                             const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
                             const debriefText = examMA.debriefMessages.map(m => `${m.role === "user" ? "Mark" : "Examiner"}: ${m.content}`).join("\n");
-                            const fullTranscript = `PRIVATE NOTES:\n${examMA.observations}\nRoot cause: ${examMA.rootCause}\n\nPEER DIALOG:\n${dialogText}\n\nPRESCRIPTION DELIVERED TO PEER:\n${examMA.prescription}\n\nPRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}`;
+                            const prescribeDialogText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
+                            const fullTranscript = `PRIVATE NOTES:\n${examMA.observations}\nRoot cause: ${examMA.rootCause}\n\nPEER DIALOG:\n${dialogText}\n\nPRESCRIPTION DELIVERY (to peer):\n${prescribeDialogText}\n\nPRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}`;
 
                             // Build summary with best scores + all attempt feedback
                             const summaryObj = {
@@ -3653,7 +3735,7 @@ PROGRESS I'VE NOTICED:
                             };
                             saveMaSessions([newSession, ...maSessions]);
 
-                            setExamMA({ phase: "setup", videoUrl: "", who: "", activity: "", conditions: "", observations: "", rootCause: "", dialogMessages: [], prescription: "", prescriptionReason: "", presentation: "", debriefMessages: [], result: null, attempts: [], attemptNumber: 1 });
+                            setExamMA({ phase: "setup", videoUrl: "", who: "", activity: "", conditions: "", observations: "", rootCause: "", dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [], presentation: "", debriefMessages: [], result: null, attempts: [], attemptNumber: 1 });
                           }} style={{
                             flex: 1, padding: "10px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer",
                             background: "rgba(40,168,88,0.08)", border: "1px solid rgba(40,168,88,0.25)", color: "#28a858",

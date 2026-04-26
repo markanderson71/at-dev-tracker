@@ -2787,7 +2787,7 @@ PROGRESS I'VE NOTICED:
                         btn.textContent = "Scoring...";
                         btn.disabled = true;
                         try {
-                          const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}`;
+                          const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
                           const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                           console.log("Score response:", resp?.slice(0, 300));
                           const parsed = parseAIJson(resp);
@@ -2851,7 +2851,7 @@ PROGRESS I'VE NOTICED:
                               btn.textContent = "Generating...";
                               btn.disabled = true;
                               try {
-                                const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}`;
+                                const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
                                 const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                                 const parsed = parseAIJson(resp);
                                 if (parsed) {
@@ -2880,7 +2880,7 @@ PROGRESS I'VE NOTICED:
                             btn.textContent = "Generating...";
                             btn.disabled = true;
                             try {
-                              const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}`;
+                              const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
                               const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                               const parsed = parseAIJson(resp);
                               if (parsed) {
@@ -3374,7 +3374,7 @@ PROGRESS I'VE NOTICED:
                             });
                           }
 
-                          const input = `INITIAL MA:\n${writtenMA.transcript}\n\nEXAMINER DIALOG:\n${dialogText}${pastContext}\n\nContext: ${writtenMA.who || ""}, ${writtenMA.activity || ""}, ${writtenMA.conditions || ""}`;
+                          const input = `INITIAL MA:\n${writtenMA.transcript}\n\nEXAMINER DIALOG:\n${dialogText}${pastContext}\n\nContext: ${writtenMA.who || ""}, ${writtenMA.activity || ""}, ${writtenMA.conditions || ""}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
                           const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                           const parsed = parseAIJson(resp);
                           setWrittenMAResult(parsed);
@@ -3754,7 +3754,7 @@ PROGRESS I'VE NOTICED:
                             revisionContext += "Score this attempt on its own merits but note what improved from previous attempts.\n";
                           }
                           const prescribeText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                          const input = `FULL AT MA EXAM SESSION:\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed this conversation):\n${prescribeText}\n\nEXAMINER Q&A:\n${debriefText}\n\nMARK'S PRIVATE NOTES (for comparison — did he articulate everything he saw?):\nObservations: ${examMA.observations}\nRoot cause: ${examMA.rootCause}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nIMPORTANT: Score based on what Mark PRESENTED and how he handled the Q&A, not just his private notes. Evaluate TWO aspects of the prescription: (1) Did he connect the task to the subject's intent when delivering it to the peer? Did the peer understand? (2) Did he explain the technical WHY to the examiner — biomechanics, physics, skill relationships? If his private notes show deeper thinking than his presentation, that's a gap in communication. In your response JSON, include two additional fields:\n"did_well": ["list of specific things Mark did well in this MA"]\n"opportunity": ["list of specific areas where Mark can improve"]`;
+                          const input = `FULL AT MA EXAM SESSION:\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed this conversation):\n${prescribeText}\n\nEXAMINER Q&A:\n${debriefText}\n\nMARK'S PRIVATE NOTES (for comparison — did he articulate everything he saw?):\nObservations: ${examMA.observations}\nRoot cause: ${examMA.rootCause}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nIMPORTANT: Score based on what Mark PRESENTED and how he handled the Q&A, not just his private notes. Evaluate TWO aspects of the prescription: (1) Did he connect the task to the subject's intent when delivering it to the peer? Did the peer understand? (2) Did he explain the technical WHY to the examiner — biomechanics, physics, skill relationships? If his private notes show deeper thinking than his presentation, that's a gap in communication. In your response JSON, include two additional fields:\n"did_well": ["list of specific things Mark did well in this MA"]\n"opportunity": ["list of specific areas where Mark can improve"]\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
                           const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                           const parsed = parseAIJson(resp);
 

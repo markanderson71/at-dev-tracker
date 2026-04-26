@@ -1149,6 +1149,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   const [examMALoading, setExamMALoading] = useState(false);
   const [aiAssessmentLoading, setAiAssessmentLoading] = useState(false);
   const [aiAssessmentResult, setAiAssessmentResult] = useState(null);
+  const [rescoringId, setRescoringId] = useState(null);
   const [challengeLoading, setChallengeLoading] = useState(false);
   const [challengeResponse, setChallengeResponse] = useState(null);
   const [analyzingMA, setAnalyzingMA] = useState(null); // session id being analyzed
@@ -2917,62 +2918,64 @@ PROGRESS I'VE NOTICED:
                             </div>
                           ))}
                         </div>
-                        {s.transcript && <button onClick={async (ev) => {
-                          const btn = ev.currentTarget;
-                          btn.textContent = "...";
-                          btn.disabled = true;
-                          try {
-                            const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
-                            const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
-                            const parsed = parseAIJson(resp);
-                            if (parsed?.scores) {
-                              const cleanSummary = { ...parsed };
-                              delete cleanSummary.raw;
-                              const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
-                              saveMaSessions(updated);
-                            } else {
-                              btn.textContent = "↻";
-                              btn.disabled = false;
-                            }
-                          } catch(err) {
-                            btn.textContent = "↻";
-                            btn.disabled = false;
-                          }
-                        }} style={{
-                          padding: "2px 6px", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, marginLeft: 2,
-                          background: "rgba(122,154,181,0.08)", border: "1px solid rgba(122,154,181,0.2)", color: "#7a9ab5",
-                        }}>↻</button>}
+                        {s.transcript && (rescoringId === s.id
+                          ? <span style={{ fontSize: 10, color: "#c060a0", marginLeft: 4 }}>scoring...</span>
+                          : <button onClick={async () => {
+                              setRescoringId(s.id);
+                              try {
+                                const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                                const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                                console.log("Rescore response:", resp?.slice(0, 300));
+                                const parsed = parseAIJson(resp);
+                                console.log("Rescore parsed:", parsed?.scores);
+                                if (parsed?.scores) {
+                                  const cleanSummary = { ...parsed, scoredAt: new Date().toISOString() };
+                                  delete cleanSummary.raw;
+                                  const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
+                                  saveMaSessions(updated);
+                                } else {
+                                  console.warn("Rescore failed - no scores extracted. Raw:", resp);
+                                  alert("Scoring failed — check console for details. The AI may not have returned valid JSON.");
+                                }
+                              } catch(err) {
+                                console.error("Rescore error:", err);
+                                alert("Scoring error: " + err.message);
+                              }
+                              setRescoringId(null);
+                            }} style={{
+                              padding: "2px 6px", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, marginLeft: 2,
+                              background: "rgba(122,154,181,0.08)", border: "1px solid rgba(122,154,181,0.2)", color: "#7a9ab5",
+                            }}>↻</button>
+                        )}
                       </div>
                     ) : s.transcript ? (
-                      <button onClick={async (ev) => {
-                        const btn = ev.currentTarget;
-                        btn.textContent = "Scoring...";
-                        btn.disabled = true;
-                        try {
-                          const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
-                          const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
-                          console.log("Score response:", resp?.slice(0, 300));
-                          const parsed = parseAIJson(resp);
-                          console.log("Parsed scores:", parsed?.scores);
-                          if (parsed?.scores) {
-                            const cleanSummary = { ...parsed };
-                            delete cleanSummary.raw;
-                            const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
-                            saveMaSessions(updated);
-                          } else {
-                            console.warn("Score parsing failed. Raw response:", resp);
-                            btn.textContent = "Retry";
-                            btn.disabled = false;
-                          }
-                        } catch(err) {
-                          console.error("Score error:", err);
-                          btn.textContent = "Error";
-                          btn.disabled = false;
-                        }
-                      }} style={{
-                        padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0,
-                        background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.25)", color: "#c060a0",
-                      }}>Score</button>
+                      rescoringId === s.id
+                        ? <span style={{ fontSize: 11, color: "#c060a0" }}>Scoring...</span>
+                        : <button onClick={async () => {
+                            setRescoringId(s.id);
+                            try {
+                              const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                              const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                              console.log("Score response:", resp?.slice(0, 300));
+                              const parsed = parseAIJson(resp);
+                              if (parsed?.scores) {
+                                const cleanSummary = { ...parsed, scoredAt: new Date().toISOString() };
+                                delete cleanSummary.raw;
+                                const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
+                                saveMaSessions(updated);
+                              } else {
+                                console.warn("Score failed. Raw:", resp);
+                                alert("Scoring failed — check console for details.");
+                              }
+                            } catch(err) {
+                              console.error("Score error:", err);
+                              alert("Scoring error: " + err.message);
+                            }
+                            setRescoringId(null);
+                          }} style={{
+                            padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0,
+                            background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.25)", color: "#c060a0",
+                          }}>Score</button>
                     ) : null}
                   </div>
 
@@ -3009,31 +3012,35 @@ PROGRESS I'VE NOTICED:
                           <div style={{ fontSize: 12, color: "#4d6888", marginBottom: 4 }}>No analysis yet — hit Rescore below.</div>
                         )}
                         {s.transcript && (
-                          <button onClick={async (ev) => {
-                            const btn = ev.currentTarget;
-                            btn.textContent = "Rescoring...";
-                            btn.disabled = true;
-                            try {
-                              const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
-                              const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
-                              const parsed = parseAIJson(resp);
-                              if (parsed?.scores) {
-                                const cleanSummary = { ...parsed };
-                                delete cleanSummary.raw;
-                                const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
-                                saveMaSessions(updated);
-                              } else {
-                                btn.textContent = "Retry";
-                                btn.disabled = false;
-                              }
-                            } catch(err) {
-                              btn.textContent = "Error — Retry";
-                              btn.disabled = false;
-                            }
-                          }} style={{
-                            marginTop: 6, padding: "6px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer",
-                            background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.2)", color: "#c060a0",
-                          }}>Rescore</button>
+                          rescoringId === s.id
+                            ? <div style={{ marginTop: 6, fontSize: 11, color: "#c060a0" }}>Rescoring...</div>
+                            : <button onClick={async () => {
+                                setRescoringId(s.id);
+                                try {
+                                  const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                                  const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                                  const parsed = parseAIJson(resp);
+                                  if (parsed?.scores) {
+                                    const cleanSummary = { ...parsed, scoredAt: new Date().toISOString() };
+                                    delete cleanSummary.raw;
+                                    const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
+                                    saveMaSessions(updated);
+                                  } else {
+                                    console.warn("Rescore failed. Raw:", resp);
+                                    alert("Rescoring failed — check console for details.");
+                                  }
+                                } catch(err) {
+                                  console.error("Rescore error:", err);
+                                  alert("Rescore error: " + err.message);
+                                }
+                                setRescoringId(null);
+                              }} style={{
+                                marginTop: 6, padding: "6px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                                background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.2)", color: "#c060a0",
+                              }}>Rescore</button>
+                        )}
+                        {aiScores?.scoredAt && (
+                          <div style={{ marginTop: 4, fontSize: 10, color: "#4d6888" }}>Scored: {new Date(aiScores.scoredAt).toLocaleDateString()} {new Date(aiScores.scoredAt).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}</div>
                         )}
                         {aiScores?.allAttempts?.length > 1 && (
                           <div style={{ marginTop: 6, fontSize: 11, color: "#7a9ab5" }}>
@@ -4052,6 +4059,7 @@ PROGRESS I'VE NOTICED:
                               })),
                               bestAttempt: cleanedAttempts.indexOf(best) + 1,
                               totalAttempts: cleanedAttempts.length,
+                              scoredAt: new Date().toISOString(),
                             };
 
                             const revCount = examMA.attempts.length - 1;

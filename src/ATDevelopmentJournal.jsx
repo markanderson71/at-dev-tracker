@@ -291,6 +291,10 @@ When Mark gives a surface-level answer, push like Chris would:
 - "IS THIS a rotary issue, a pressure issue, or an edge issue? You need to name the PRIMARY skill before connecting to others."
 - "You connected two fundamentals — that's L3. Now see the WHOLE PICTURE. Which fundamental is DRIVING the others? How does it cascade through the rest?"
 - "You jumped straight to a prescription — what QUESTIONS would you ask the instructor first to verify your observation?"
+- "You said the ski is washing out — WHERE in the turn? What's the DIRT? Is it the rate of edge engagement or the timing of pressure?"
+- "You're prescribing for groomed conditions — but they're on ice. Does your prescription still work? What would you change?"
+- "What's the INSIDE ski doing? You described the outside ski but the relationship between the two tells the real story."
+- "Is this a skill deficiency or a DIRT issue? Can they DO it but with wrong timing? Or can they not do it at all?"
 - "What's WORKING? Say that before you say what's not. The instructor needs to hear success before correction."
 - "You're prescribing a groomed-snow solution — look at the CONDITIONS. Does your prescription fit the environment?"
 - "The subject said they're focused on steering. You identified edging. DON'T choose one or the other — show how your edging observation CONNECTS to their steering focus. How does fixing the edge make their steering work better?"
@@ -298,16 +302,17 @@ When Mark gives a surface-level answer, push like Chris would:
 - "That's an observation, not a diagnosis. An observation is what you SEE. A diagnosis is what you've VERIFIED through dialog."
 
 PUSH ON THESE AT-LEVEL REQUIREMENTS:
-1. Describe by turn phase, not as a single event
-2. See the WHOLE PICTURE first, then PRIORITIZE the primary fundamental, then connect MULTIPLE fundamentals — not just A→B, but the full cascade with a very specific root cause
-3. Explain the PHYSICS of why the prescription works (not just "do this exercise")
-4. Adapt the analysis to CONDITIONS (powder ≠ groomed ≠ ice)
+1. Describe by turn phase using DIRT (duration, intensity, rate, timing) for precision, not as a single event
+2. See the WHOLE PICTURE first, then PRIORITIZE the primary fundamental, then connect MULTIPLE fundamentals with a full cascade to a very specific root cause. Look for Z-shaped patterns across phases.
+3. Explain the PHYSICS of why the prescription works — sidecut engagement, forces, edging-rotary spectrum, three-joint constraint, not just "do this exercise"
+4. Adapt the analysis to CONDITIONS — snow type, condition, pitch, and speed interact as a system. Ice demands different DIRT than groomed. Use the diagnostic framework: skill deficiency vs accuracy of use vs condition mismatch vs tactical upgrade.
 5. Verify through DIALOG before diagnosing (statement-then-question technique)
-6. Connect to BIOMECHANICS (which joint, which part of the kinetic chain)
-7. Prescribe using IDP activities with VARIATIONS and explain WHY that activity targets the root cause
+6. Connect to BIOMECHANICS — which joint, three-joint constraint (ankle flex changes edge angle, femur rotation changes pressure), 65/35 upper/lower separation, inclination vs angulation, inside/outside ski independence
+7. Prescribe using IDP activities with VARIATIONS and explain WHY — connect the task to the physics of the root cause and the conditions
 8. Address all three CAP domains (cognitive: do they understand? affective: are they ready for feedback? physical: can they execute?)
 9. Consider the instructor's CERT LEVEL — how does a new hire vs L2 vs peer change your approach?
-10. CONNECT YOUR OBSERVATION TO THE SUBJECT'S INTENT — the AT skill is NOT choosing between your analysis and their focus. It's showing how your observation SERVES their intent. "You're working on steering — here's how earlier edge engagement would make that steering more effective." An L3 overrides or defers. An AT connects.
+10. CONNECT YOUR OBSERVATION TO THE SUBJECT'S INTENT — show how your observation SERVES their intent. An L3 overrides or defers. An AT connects.
+11. Observe BOTH skis — inside and outside ski behavior, their relationship (parallel, diverging, A-frame), and what that reveals about the skill blend
 
 Mark's development themes:
 1. "Can I see past the symptom to the root cause?" — blended MA using 3+ skills
@@ -398,22 +403,26 @@ WHAT SEPARATES A 3 FROM A 4:
 
 WHAT CHRIS PUSHES ON:
 - Anatomical vagueness ("both legs" without specifying which, when, where)
-- Terms used without unpacking physics ("grip" without explaining what grip allows)
+- Terms used without unpacking physics ("grip" without explaining what sidecut engagement and reverse camber produce)
 - Skipping task compliance check
-- Not adapting to conditions
+- Not adapting to conditions — defaulting to groomed-snow thinking
 - Jumping to prescription before verifying through dialog
 - Not acknowledging what's working (CAP affective)
+- Describing the whole turn as one event instead of locating by phase with DIRT
+- Not distinguishing inside vs outside ski behavior
+- Not identifying whether issue is skill deficiency, accuracy of use, condition mismatch, or tactical upgrade
+- Missing the three-joint constraint — how a movement for one skill affects others
 - Contradictory descriptions (sign of not organizing by turn phase)
 
 Assessment Scale: 1=Not observed, 2=Beginning, 3=L3-level (appear but inconsistently AT), 4=AT-level satisfactory (PASS), 5=Frequently above required, 6=Continuously superior
 
 Score against these criteria:
-- Describe Performance: Phase-specific? Both ski AND body? Which leg, which joint?
-- Cause and Effect: Multi-skill chain? Primary cause identified? Bidirectional analysis?
-- Evaluate: Task compliance checked? Compared to intended outcome?
-- Prescription: IDP activity chosen? Variations? Terrain selection justified? Adapted to conditions? Connected to subject's intent when delivered? Technical WHY explained to examiner?
-- Biomechanics/Physics: WHY explained at the physics level? Kinetic chain? Forces?
-- Communication: Two audiences assessed — (1) To the peer: connected task to their focus/intent? Helped them see relevance without coaching? (2) To the examiner: organized by phase, clear cause-effect chain, technical depth demonstrated?
+- Describe Performance: Phase-specific? Both ski AND body? Which leg, which joint? DIRT used for precision? Inside vs outside ski distinguished?
+- Cause and Effect: Multi-skill chain? Primary fundamental prioritized? Bidirectional analysis? Z-shaped patterns identified? Edging-pressure-rotary interactions through three-joint constraint?
+- Evaluate: Task compliance checked? Compared to intended outcome using speed, turn shape, size, line, ski-snow interaction? Diagnostic framework applied (skill deficiency vs accuracy of use vs condition mismatch vs tactical upgrade)?
+- Prescription: IDP activity chosen? Variations? Terrain justified? Adapted to conditions? Connected to subject's intent when delivered? Technical WHY explained using physics (sidecut, forces, edging-rotary spectrum)?
+- Biomechanics/Physics: WHY at physics level? Sidecut engagement, reverse camber, centripetal forces, fore/aft through arc, three-joint constraint, 65/35 upper/lower separation, inclination vs angulation, inside/outside ski independence? A 3 names the skill. A 4 explains the physics.
+- Communication: Two audiences — (1) Peer: connected task to focus, helped see relevance (2) Examiner: organized by phase, DIRT precision, technical depth, clear cause-effect chain
 
 Respond ONLY in this JSON format (no markdown, no backticks):
 {"skills_identified":["list of skills mentioned"],"cause_effect":"description of cause-effect relationships identified","root_cause":"what they identified as root cause","prescription":"what they prescribed","mentor_corrections":"key corrections from mentor if present","strengths":["list of strengths"],"gaps":["list of gaps/blind spots"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"pattern_notes":"recurring patterns or tendencies observed","key_learning":"the single most important thing to work on"}`;
@@ -454,12 +463,12 @@ CALIBRATE AGAINST CHRIS'S KNOWN ASSESSMENT:
 If mentor development assessments are provided, use them as your calibration. If Chris says Mark's cause-effect "lacks specific timing, phase and impacted ski performance," then don't give a 4 on cause/effect unless Mark actually addresses timing, phase, AND ski performance impact in THIS session. If Chris says Mark "jumps to prescription without verifying," don't give a 4 on prescription unless Mark actually verified through dialog first. The mentor assessment is the ground truth — your scores should reflect whether Mark has addressed what Chris is pushing on.
 
 SCORE THESE CRITERIA (against the whole interaction):
-- Describe: Did Mark describe by turn phase? Both ski and body performance? Specific about which leg, joint, timing?
-- Cause/Effect: Did Mark see the whole picture, prioritize the primary fundamental, then trace a multi-skill cascade? Or just connect A→B?
-- Evaluate: Did Mark check task compliance? Compare intended vs observed? Verify through dialog before diagnosing?
-- Prescription: Did Mark choose an appropriate IDP task with variations? Connect it to the subject's intent when delivering? Explain the technical WHY to the examiner? Adapt to conditions?
-- Biomechanics/Physics: Did Mark explain WHY at the physics level? Kinetic chain, forces, ski/snow interaction?
-- Communication: Two audiences — did Mark help the peer see relevance to their focus? Did Mark demonstrate technical depth to the examiner organized by phase?
+- Describe: Did Mark describe by turn phase? Both ski AND body performance? Specific about which leg, joint, timing? Did he use DIRT (duration, intensity, rate, timing) to add precision? Did he distinguish inside vs outside ski behavior?
+- Cause/Effect: Did Mark see the whole picture, prioritize the primary fundamental, then trace a multi-skill cascade? Did he identify Z-shaped patterns (cause in one phase, effect in another)? Did he connect edging-pressure interactions and the three-joint constraint? Or just connect A to B?
+- Evaluate: Did Mark check task compliance? Compare intended vs observed using speed, turn shape, turn size, line, ski-snow interaction? Did he use the diagnostic framework — is the issue a skill deficiency, accuracy of use (wrong DIRT), condition mismatch, or tactical upgrade? Did he consider how snow, condition, pitch, and speed interact?
+- Prescription: Did Mark choose an appropriate IDP task with variations? Connect it to the subject's intent when delivering? Explain the technical WHY to the examiner using physics — sidecut engagement, forces, edging-rotary spectrum, three-joint constraint? Adapt to conditions?
+- Biomechanics/Physics: Did Mark explain WHY using physics concepts — sidecut engagement and reverse camber, edging-rotary spectrum, pressure as centripetal force, fore/aft through the arc, upper/lower body separation (65/35), inside/outside ski independence, inclination vs angulation? A 3 names the skill. A 4 explains the physics of WHY it matters.
+- Communication: Two audiences — did Mark help the peer see relevance to their focus? Did Mark demonstrate technical depth to the examiner organized by phase with DIRT precision?
 
 COMPARE to previous sessions. Identify what IMPROVED, what PERSISTS as a gap, and what's NEW.
 
@@ -506,12 +515,15 @@ YOUR DEBRIEF APPROACH (based on the real AT exam format):
 4. Probe the technical WHY (in the presentation): "You explained why you chose this task — can you go deeper on the biomechanics? Why does THIS task change THAT movement pattern at the physics level?"
 5. Ask if the peer changed: "Based on your dialog, do you think the peer understood the issue? What would indicate change?"
 6. Push on gaps you see in his analysis — use Chris's style:
-   - "You identified X — but which PHASE of the turn does it happen in?"
-   - "You prescribed Y — but the conditions were Z. Does that prescription still work?"
+   - "You identified X — but which PHASE of the turn does it happen in? What's the DIRT?"
+   - "You prescribed Y — but the conditions were Z. Does that prescription still work? Is this a skill issue or a conditions mismatch?"
    - "The peer told you they were trying to ski faster — how does that change your diagnosis?"
-   - "You connected two fundamentals — which one is DRIVING the others?"
+   - "You connected two fundamentals — which one is DRIVING the others? How does it cascade?"
    - "You told the peer what to do — but did you help them see WHY it connects to their focus?"
-   - "You explained the task to me — now tell me what happens in the kinetic chain. Why does this task produce that change?"
+   - "What's the inside ski doing? You described the outside ski but the relationship tells the story."
+   - "You said the edge is releasing — explain the physics. What's happening at the sidecut level? How does pressure affect the reverse camber?"
+   - "Is this a skill deficiency or a DIRT issue? Can they do it with different timing?"
+   - "You're analyzing on groomed — how would this change on ice? On bumps?"
 7. Ask ONE question at a time. Be direct.
 8. After 3-4 exchanges, provide a brief honest summary before scoring.`;
 
@@ -978,6 +990,129 @@ TEACHING vs CLINIC LEADING
 L3: TEACHING — plans learning outcomes for advanced students in group lesson format, 20-25 minutes
 AT: CLINIC LEADING — plans learning experiences for certification candidates based on organizational AND learner needs, 25 minutes, assigned outline emailed 1 week prior
 Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing RESORT NEEDS with learner needs.
+
+
+═══ PHYSICS & BIOMECHANICS (Technical Understanding Reference) ═══
+
+EDGE-SNOW INTERACTION:
+- Flat ski: minimal lateral resistance, rotation is dominant turning force
+- Edged ski: sidecut geometry activates. Contact at tip/tail, waist off snow. Pressure bends ski into reverse camber, creating carved arc
+- Higher edge angle = deeper sidecut engagement = tighter turn radius
+- Edge angle requires BOTH tipping AND pressure to produce a carved arc
+- Excessive edge angle: ski breaks away from snow surface, especially in softer conditions where edge cuts through rather than grips
+- Edge creates platform to resist centripetal forces through the arc
+
+EDGING-ROTARY RELATIONSHIP:
+- Edging and rotary exist on a spectrum — more of one typically means less of the other
+- Deeply edged ski resists rotation — edge locked into snow
+- Flat ski rotates easily but has no lateral grip
+- Most turns require a BLEND that changes through turn phases: initiation (more rotary), shaping (edge increases, sidecut works), finish (blend shifts for next turn)
+- Pure sidecut rarely produces ideal outcome through entire turn — rotary supplements edging
+- Steering angle: difference between where ski points and direction of travel. Pure carve = zero. Rotary input creates steering angle.
+- Spectrum: pure carve (max edge) to steered (blend) to skidded (max steering angle)
+
+CONDITIONS — HOW THEY AFFECT SKI/SNOW INTERACTION:
+- Hard pack: supports higher edge angles, rewards precision, exposes edge timing flaws
+- Ice: edge skips/chatters. Requires PROGRESSIVE edge engagement, LIGHTER pressure, EARLIER engagement, QUIET smooth movements. Abrupt edging or pressure causes loss of grip. Reduced carving expectations.
+- Soft snow: edge cuts through at high angles, requires more steering and less edge
+- Powder: ski floats, speed creates flotation. More equal pressure ski-to-ski. Rotary more important.
+- Crud/variable: unpredictable resistance changes, continuous adaptation, independent leg absorption
+- Steep terrain: gravity accelerates quickly, forces compound rapidly. Turn shape controls speed. Earlier edge engagement needed.
+- Bumps: rapid flexion/extension, terrain dictates turn shape/line, maximum upper/lower separation
+- Spring/corn: surface changes through the day — frozen AM to soft PM. Adapt within a single run.
+
+PRESSURE MANAGEMENT:
+- Pressure builds naturally from centripetal forces during a turn
+- First half (initiation to fall line): pressure relatively low — momentum and gravity aligned
+- Second half (fall line to finish): pressure builds as momentum and ski direction diverge — gravity and inertia compound
+- Ski pushes on snow, snow pushes back (ground reaction force) from outside the turn
+- Skier balances between gravity (down/inside) and ground reaction force (outside) through inclination and angulation
+- Pressure as a resource: Absorb (flex = edge lightens), Resist (extend = sustain edge), Redirect (use energy for next turn)
+- Pressure management directly affects edge engagement — linked, not independent
+
+TRANSITION:
+- How pressure releases from previous turn determines next turn entry
+- Retraction (flex/pull feet): skis pushed under CM (crossunder) — quick transitions
+- Extension: CM moves over skis (crossover) — more deliberate transitions
+
+FORE/AFT BALANCE:
+- Ski accelerates on snow faster than body — tends to get ahead
+- Continuous flexion/extension of ankle, knee, hip maintains CM over BoS
+- Terrain disrupts: drops accelerate ski (CM lags), rises decelerate (CM surges)
+- Fore/aft pressure through the arc: forward (tip engagement at initiation), center (full sidecut in shaping), slight aft (release for transition)
+
+TURN RADIUS AND BALANCE:
+- Smaller radius = faster rebalancing required, higher rate of force change
+- Speed compounds: more force at higher speed requires more precise adjustment
+
+THE THREE-JOINT CONSTRAINT:
+- Legs have three joints: ankle, knee, hip — serving ALL skills
+- Any movement for one skill affects others: ankle flexion changes edge angle, femur rotation changes pressure and edge, hip angulation affects fore/aft and rotary
+- Lower-level: movements leak across skills. Higher-level: minimize cross-effects through precise isolated joint movements
+- This is WHY skill blending matters — skier manages interactions, not separate skills
+
+UPPER/LOWER BODY SEPARATION (65/35):
+- ~65% mass upper body, ~35% legs. CM just above hips.
+- Small upper body movements have disproportionately large effect on balance and pressure
+- Lower-level: upper body drives tipping, rotation, balance. Coupled movement. Spine twist.
+- Higher-level: quiet stable upper body platform. All turning/tipping from feet up through ankle/knee/hip. Separation at femur-hip joint. Independent leg suspension.
+
+SKI-TO-SKI PRESSURE & INCLINATION/ANGULATION:
+- Leg length difference creates pressure shift — longer leg bears more weight
+- Inside leg shortening + outside leg extending moves CM inside = inclination = increased edge angle
+- Disadvantage of inclination: further CM moves inside, more time to cross to next turn
+- Angulation compensates: hip angles keep upper body over outside ski, balancing against centripetal force
+- Banking = inclination WITHOUT angulation. 65% of mass falls inside. Edge overwhelmed. Lower-level error.
+- Two ways to shift: shorten inside leg (flex) or extend outside leg (push) — both simultaneously at different rates
+
+INDEPENDENT LEG ACTION:
+- Each leg can rotate, tip, flex, extend at different rates and timing independently
+- Inside and outside ski can do different things simultaneously: different rotation rates, edge angles, flex/extension, fore/aft position
+- Creates complex blending across ALL fundamentals simultaneously
+- Higher-level: active inside leg with maintained tension and matching ankle flex
+- Observe inside ski: excessive lead? diverging? flat vs matching edge? actively managed or passive? tension or collapse?
+- Observe outside ski: tail follows tip? appropriate pressure? progressive edge? extending or flexing? rotation source?
+- Relationship between skis tells the story: parallel matching = blended well, diverging = rotary mismatch, A-frame = inside edging without outside matching
+
+TURN PHASES:
+- Most specific (AT required): Initiation → Shaping → Finish → Transition
+- Less specific: Above fall line / Below fall line
+- General (insufficient for AT): "the turn" as one event
+- AT communication: precise but efficient. "From initiation through shaping" not "at initiation and then into the first part of shaping"
+- Z-shaped observation: cause-effect chain jumps across phases or across turns. Root cause may be in different phase than symptom.
+
+DIRT — Duration, Intensity, Rate, Timing:
+- Duration: how long a movement lasts
+- Intensity: power/magnitude of movement
+- Rate: speed of movement
+- Timing: when movement occurs relative to phase or another movement
+- DIRT applies independently to each fundamental on each leg
+- DIRT + Phase = precise description: "intensity of edging in shaping is high but duration too short"
+- Same task, different skiers: DIRT explains the difference
+
+TURN SHAPES:
+- C turn: round, complete. Skis cross fall line. Speed controlled through shape. DESIRED.
+- S turn: skis change direction but don't fully cross fall line. Speed maintaining/generating. DESIRED for performance.
+- J turn: half a C. Point downhill, gradually turn across and uphill. Speed check.
+- Z turn (problem): sharp angular changes, no round shaping. Braking at one point. Rotary-dominant, defensive.
+- Turn shape is an OUTCOME of skill blending, not a skill itself.
+
+SPEED — TWO FRAMES:
+- Linear: how fast down the hill. Determined by pitch, friction, turn shape, tactics.
+- Angular: how fast through the arc. Affected by turn radius, edge angle, momentum carried in.
+- Speed as input AND output: momentum brought INTO the turn may be desirable or not. Speed that RESULTS from the turn depends on shape, blend, conditions.
+
+AT DIAGNOSTIC FRAMEWORK:
+1. SKILL DEFICIENCY: Can't do it even in ideal conditions → IDP task
+2. ACCURACY OF USE: Has the skill, wrong DIRT → adjust specific parameters
+3. CONDITION MISMATCH: Intent doesn't match what conditions support → tactical adaptation
+4. TACTICAL UPGRADE: Getting it done but not optimally → introduce better tactic for these conditions
+
+THE FOUR VARIABLES INTERACT AS A SYSTEM:
+- Snow type + condition + pitch + speed combine to create specific demands
+- Same movement pattern produces different outcomes in different combinations
+- AT must assess: what skier is DOING vs what conditions DEMAND vs the GAP between them
+- The gap may be skill, accuracy, conditions, or tactics — prescription depends on which
 
 ═══ ADD YOUR OWN NOTES BELOW ═══`); // PSIA content from Assessment Guide 25-26 — editable by Mark
   const [dataLoaded, setDataLoaded] = useState(false);

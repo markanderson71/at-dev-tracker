@@ -470,6 +470,16 @@ SCORE THESE CRITERIA (against the whole interaction):
 - Biomechanics/Physics: Did Mark explain WHY using physics concepts — sidecut engagement and reverse camber, edging-rotary spectrum, pressure as centripetal force, fore/aft through the arc, upper/lower body separation (65/35), inside/outside ski independence, inclination vs angulation? A 3 names the skill. A 4 explains the physics of WHY it matters.
 - Communication: Two audiences — did Mark help the peer see relevance to their focus? Did Mark demonstrate technical depth to the examiner organized by phase with DIRT precision?
 
+HOW TO SCORE THE EXAMINER Q&A:
+Examiner questions are NOT inherently negative — they serve multiple purposes:
+- Checking for GREATER understanding (can bring scores UP if Mark demonstrates depth he didn't initially present)
+- Validating or clarifying what Mark said (neutral — the examiner is confirming)
+- Verifying understanding (neutral — making sure Mark truly grasps it)
+- Seeing if Mark can approach from a different direction (positive if he can, reveals flexibility)
+Score based on HOW MARK RESPONDS to questions, not on the fact that questions were asked.
+A strong Q&A response that demonstrates deeper understanding than the initial presentation should RAISE the relevant score, not leave it where the presentation alone would have placed it.
+A weak Q&A response that reveals the initial presentation was surface-level confirms the lower score.
+
 COMPARE to previous sessions. Identify what IMPROVED, what PERSISTS as a gap, and what's NEW.
 
 Respond ONLY in JSON (no markdown, no backticks):
@@ -509,12 +519,19 @@ YOU HAVE ACCESS TO:
 - Mentor development assessments (if available)
 
 YOUR DEBRIEF APPROACH (based on the real AT exam format):
+Examiner questions serve MULTIPLE purposes — asking questions is NOT inherently negative:
+- To check for GREATER understanding — the candidate may know more than they presented. Questions can bring scores UP.
+- To VALIDATE or CLARIFY something the candidate said
+- To VERIFY understanding — confirming the candidate truly grasps what they described
+- To see if the candidate can approach it from a DIFFERENT DIRECTION — demonstrating flexibility of thinking
+You are a VERIFIER, not a justifier. You are checking whether the candidate has the depth, not making them defend themselves.
+
 1. Start by acknowledging ONE thing Mark did well — be specific
 2. Ask about additional data: "Was there anything else you noticed that you didn't address?"
 3. Probe the prescription DELIVERY (to the peer): "When you delivered the task to the peer, did you connect it to what they said they were working on? Did they understand WHY this task was relevant to their intent?"
 4. Probe the technical WHY (in the presentation): "You explained why you chose this task — can you go deeper on the biomechanics? Why does THIS task change THAT movement pattern at the physics level?"
 5. Ask if the peer changed: "Based on your dialog, do you think the peer understood the issue? What would indicate change?"
-6. Push on gaps you see in his analysis — use Chris's style:
+6. Push on areas where you want to see MORE — use Chris's style:
    - "You identified X — but which PHASE of the turn does it happen in? What's the DIRT?"
    - "You prescribed Y — but the conditions were Z. Does that prescription still work? Is this a skill issue or a conditions mismatch?"
    - "The peer told you they were trying to ski faster — how does that change your diagnosis?"
@@ -1341,7 +1358,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
       const presentation = transcript.match(/PRESENTATION TO EXAMINER:\n([\s\S]*?)(?=\nEXAMINER Q&A)/)?.[1]?.trim() || "";
       const examinerQA = transcript.match(/EXAMINER Q&A:\n([\s\S]*?)$/)?.[1]?.trim() || "";
 
-      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}\n\nScore TWO communication audiences: (1) Did Mark connect the prescription to the peer's intent? (2) Did Mark demonstrate technical depth to the examiner organized by phase?${jsonReminder}`;
+      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}\n\nScore TWO communication audiences: (1) Did Mark connect the prescription to the peer's intent? (2) Did Mark demonstrate technical depth to the examiner organized by phase?\n\nIMPORTANT: Examiner questions are verifiers, not justifiers. If Mark demonstrates deeper understanding in Q&A than in his initial presentation, that should RAISE the relevant scores. Score based on the TOTAL picture of what the examiner heard across all phases.${jsonReminder}`;
     }
 
     if (ctx.includes("examiner q&a") || ctx.includes("written ma") || ctx.includes("free write")) {

@@ -165,20 +165,99 @@ function apiUpdate(s, d) { return apiPost("update", s, d); }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const parseAIJson = (resp) => {
+  if (!resp) return { raw: "", scores: null };
+  
+  // Strategy 1: Clean and parse directly
   try {
-    let clean = (resp || "").replace(/```json|```/g, "").trim();
+    let clean = resp.replace(/```json|```/g, "").trim();
     const jsonStart = clean.indexOf("{");
     const jsonEnd = clean.lastIndexOf("}");
     if (jsonStart !== -1 && jsonEnd > jsonStart) {
-      clean = clean.slice(jsonStart, jsonEnd + 1);
+      const candidate = clean.slice(jsonStart, jsonEnd + 1);
+      const parsed = JSON.parse(candidate);
+      if (parsed.scores) {
+        // Ensure scores are numbers not strings
+        Object.keys(parsed.scores).forEach(k => { parsed.scores[k] = Number(parsed.scores[k]) || 0; });
+        return parsed;
+      }
     }
-    return JSON.parse(clean);
-  } catch(e) {
-    // Try to extract useful fields from text
-    return { raw: resp, scores: null };
-  }
+  } catch(e) {}
+  
+  // Strategy 2: Find the scores object directly via regex
+  try {
+    const scoresMatch = resp.match(/"scores"\s*:\s*\{([^}]+)\}/);
+    if (scoresMatch) {
+      // Build a minimal valid JSON around the scores
+      const scoresJson = `{${scoresMatch[0]}}`;
+      const scoresObj = JSON.parse(scoresJson);
+      Object.keys(scoresObj.scores).forEach(k => { scoresObj.scores[k] = Number(scoresObj.scores[k]) || 0; });
+      
+      // Try to extract other fields
+      const result = { scores: scoresObj.scores };
+      const extractArray = (key) => {
+        const m = resp.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]+)\\]`));
+        if (m) try { return JSON.parse(`[${m[1]}]`); } catch(e) { return m[1].split(",").map(s => s.replace(/"/g, "").trim()).filter(Boolean); }
+        return null;
+      };
+      const extractStr = (key) => {
+        const m = resp.match(new RegExp(`"${key}"\\s*:\\s*"([^"]+)"`));
+        return m ? m[1] : null;
+      };
+      result.did_well = extractArray("did_well") || extractArray("strengths");
+      result.opportunity = extractArray("opportunity") || extractArray("gaps");
+      result.strengths = extractArray("strengths");
+      result.gaps = extractArray("gaps");
+      result.improvements = extractArray("improvements");
+      result.persistent_gaps = extractArray("persistent_gaps");
+      result.key_learning = extractStr("key_learning");
+      result.cause_effect = extractStr("cause_effect");
+      result.root_cause = extractStr("root_cause");
+      return result;
+    }
+  } catch(e) {}
+  
+  // Strategy 3: Look for score numbers in text format
+  try {
+    const scorePatterns = {
+      describe: /describe[:\s]*(\d)/i,
+      cause_effect: /cause.?effect[:\s]*(\d)/i,
+      evaluate: /evaluate[:\s]*(\d)/i,
+      prescription: /prescription[:\s]*(\d)/i,
+      biomechanics: /bio(?:mechanics|\/physics)[:\s]*(\d)/i,
+      communication: /comm(?:unication)?[:\s]*(\d)/i,
+    };
+    const scores = {};
+    let found = 0;
+    Object.entries(scorePatterns).forEach(([key, pattern]) => {
+      const m = resp.match(pattern);
+      if (m) { scores[key] = Number(m[1]); found++; }
+    });
+    if (found >= 3) {
+      return { scores, raw: resp };
+    }
+  } catch(e) {}
+  
+  return { raw: resp, scores: null };
 };
 const today = () => new Date().toISOString().split("T")[0];
+const parseSummary = (summary) => {
+  if (!summary) return null;
+  try {
+    const obj = typeof summary === "string" ? JSON.parse(summary) : summary;
+    if (obj?.scores) {
+      Object.keys(obj.scores).forEach(k => { obj.scores[k] = Number(obj.scores[k]) || 0; });
+      return obj;
+    }
+    if (obj?.raw) {
+      const reparsed = parseAIJson(obj.raw);
+      if (reparsed?.scores) return { ...obj, ...reparsed };
+    }
+    return obj;
+  } catch(e) {
+    if (typeof summary === "string") return parseAIJson(summary);
+    return null;
+  }
+};
 
 // ═══════════════════════════════════════════════════════════════════════
 // SPARRING PARTNER — Claude AT Coach
@@ -1197,8 +1276,8 @@ Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing
         prompt += `\n[${s.date} · ${s.context || ""} · Analyzing: ${s.who || "unknown"} · Activity: ${s.activity || ""}]`;
         if (s.summary) {
           try {
-            const parsed = typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary;
-            if (parsed.scores) {
+            const parsed = parseSummary(s.summary);
+            if (parsed?.scores) {
               prompt += `\nAI Scores: Describe=${parsed.scores.describe} Cause/Effect=${parsed.scores.cause_effect} Evaluate=${parsed.scores.evaluate} Prescription=${parsed.scores.prescription} Bio/Physics=${parsed.scores.biomechanics} Communication=${parsed.scores.communication}`;
             }
             if (parsed.gaps) prompt += `\nAI Gaps: ${parsed.gaps.join(", ")}`;
@@ -1968,7 +2047,7 @@ Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing
                   {/* Summary display */}
                   {s.summary && (() => {
                     let parsed = null;
-                    try { parsed = typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary; } catch(e) {}
+                    parsed = parseSummary(s.summary)
                     if (!parsed || !parsed.scores) {
                       return (
                         <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(192,96,160,0.04)", border: "1px solid rgba(192,96,160,0.1)", fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
@@ -2098,7 +2177,7 @@ Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing
                   maScoreKeys.forEach(k => { scoreHistory[k] = []; });
                   analyzedSessions.sort((a, b) => (a.date || "").localeCompare(b.date || "")).forEach(s => {
                     try {
-                      const parsed = typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary;
+                      const parsed = parseSummary(s.summary);
                       if (parsed?.scores) {
                         maScoreKeys.forEach(k => {
                           if (parsed.scores[k]) scoreHistory[k].push({ score: parsed.scores[k], date: s.date, context: s.activity || s.who || "" });
@@ -2112,7 +2191,7 @@ Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing
                   const allStrengths = [];
                   analyzedSessions.forEach(s => {
                     try {
-                      const parsed = typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary;
+                      const parsed = parseSummary(s.summary);
                       if (parsed?.gaps) allGaps.push(...parsed.gaps);
                       if (parsed?.strengths) allStrengths.push(...parsed.strengths);
                     } catch(e) {}
@@ -2350,7 +2429,7 @@ Key shift: L3 teaches students. AT leads clinics for INSTRUCTORS while balancing
                         maContext += `\n[${s.date} · ${s.context || ""} · ${s.who || ""} · ${s.activity || ""}]`;
                         if (s.summary) {
                           try {
-                            const p = typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary;
+                            const p = parseSummary(s.summary);
                             if (p.scores) maContext += `\nScores: D=${p.scores.describe} C/E=${p.scores.cause_effect} E=${p.scores.evaluate} P=${p.scores.prescription} B=${p.scores.biomechanics} Co=${p.scores.communication}`;
                             if (p.did_well) maContext += `\nDid well: ${(Array.isArray(p.did_well) ? p.did_well : [p.did_well]).join(", ")}`;
                             if (p.opportunity) maContext += `\nOpportunity: ${(Array.isArray(p.opportunity) ? p.opportunity : [p.opportunity]).join(", ")}`;
@@ -2678,12 +2757,7 @@ PROGRESS I'VE NOTICED:
                 </div>
               </Card>
             ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
-              let aiScores = null;
-              try { 
-                aiScores = s.summary ? (typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary) : null;
-                // Handle wrapped format with raw text
-                if (aiScores && !aiScores.scores && aiScores.raw) aiScores = null;
-              } catch(e) {}
+              let aiScores = parseSummary(s.summary);
               const scoreColor = (v) => v >= 4 ? "#28a858" : v >= 3 ? "#e07830" : "#e05028";
               const mentorFeedback = s.mentorFeedback || [];
               const didWell = aiScores?.did_well || aiScores?.strengths || [];
@@ -2699,7 +2773,7 @@ PROGRESS I'VE NOTICED:
                         {s.activity || "MA Session"}{s.who ? ` — analyzing ${s.who}` : ""}
                       </div>
                     </div>
-                    {aiScores?.scores && (
+                    {aiScores?.scores ? (
                       <div style={{ display: "flex", gap: 3 }}>
                         {[{ key: "describe", l: "D" }, { key: "cause_effect", l: "C" }, { key: "evaluate", l: "E" }, { key: "prescription", l: "P" }, { key: "biomechanics", l: "B" }, { key: "communication", l: "Co" }].map(sc => (
                           <div key={sc.key} style={{ width: 24, height: 24, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: scoreColor(aiScores.scores[sc.key] || 0), background: `${scoreColor(aiScores.scores[sc.key] || 0)}12`, border: `1px solid ${scoreColor(aiScores.scores[sc.key] || 0)}30` }}>
@@ -2707,7 +2781,28 @@ PROGRESS I'VE NOTICED:
                           </div>
                         ))}
                       </div>
-                    )}
+                    ) : s.transcript ? (
+                      <button onClick={async (ev) => {
+                        const btn = ev.currentTarget;
+                        btn.textContent = "Scoring...";
+                        btn.disabled = true;
+                        const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}`;
+                        const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                        const parsed = parseAIJson(resp);
+                        if (parsed?.scores) {
+                          const cleanSummary = { ...parsed };
+                          delete cleanSummary.raw;
+                          const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
+                          saveMaSessions(updated);
+                        } else {
+                          btn.textContent = "Retry";
+                          btn.disabled = false;
+                        }
+                      }} style={{
+                        padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0,
+                        background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.25)", color: "#c060a0",
+                      }}>Score</button>
+                    ) : null}
                   </div>
 
                   {/* Mark's MA transcript */}
@@ -3193,7 +3288,7 @@ PROGRESS I'VE NOTICED:
                             pastContext = "\n\nPREVIOUS SESSIONS FOR COMPARISON:\n";
                             pastSessions.forEach(s => {
                               try {
-                                const p = typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary;
+                                const p = parseSummary(s.summary);
                                 if (p?.scores) pastContext += `[${s.date} · ${s.activity}] Scores: D=${p.scores.describe} C/E=${p.scores.cause_effect} E=${p.scores.evaluate} P=${p.scores.prescription} B=${p.scores.biomechanics} C=${p.scores.communication}. Gaps: ${(p.gaps||[]).join(", ")}\n`;
                               } catch(e) {}
                             });
@@ -3566,7 +3661,7 @@ PROGRESS I'VE NOTICED:
                           let pastContext = "";
                           if (pastSessions.length > 0) {
                             pastContext = "\n\nPREVIOUS SESSIONS FOR COMPARISON:\n";
-                            pastSessions.forEach(s => { try { const p = typeof s.summary === "string" ? JSON.parse(s.summary) : s.summary; if (p?.scores) pastContext += `[${s.date}] D=${p.scores.describe} C/E=${p.scores.cause_effect} E=${p.scores.evaluate} P=${p.scores.prescription} B=${p.scores.biomechanics} C=${p.scores.communication}. Gaps: ${(p.gaps||[]).join(", ")}\n`; } catch(e) {} });
+                            pastSessions.forEach(s => { try { const p = parseSummary(s.summary); if (p?.scores) pastContext += `[${s.date}] D=${p.scores.describe} C/E=${p.scores.cause_effect} E=${p.scores.evaluate} P=${p.scores.prescription} B=${p.scores.biomechanics} C=${p.scores.communication}. Gaps: ${(p.gaps||[]).join(", ")}\n`; } catch(e) {} });
                           }
                           // Include previous attempt context if revising
                           let revisionContext = "";
@@ -3651,19 +3746,23 @@ PROGRESS I'VE NOTICED:
                           /* Fallback: display as readable text */
                           <div style={{ padding: "10px 12px", borderRadius: 6, background: "rgba(255,255,255,0.02)", marginBottom: 10 }}>
                             <div style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                              {typeof examMA.result === "string" ? examMA.result : (() => {
-                                try {
-                                  const r = typeof examMA.result === "object" ? examMA.result : {};
-                                  const parts = [];
-                                  if (r.strengths) parts.push("Strengths: " + (Array.isArray(r.strengths) ? r.strengths.join(", ") : r.strengths));
-                                  if (r.did_well) parts.push("Did well: " + (Array.isArray(r.did_well) ? r.did_well.join(", ") : r.did_well));
-                                  if (r.gaps) parts.push("Gaps: " + (Array.isArray(r.gaps) ? r.gaps.join(", ") : r.gaps));
-                                  if (r.opportunity) parts.push("Opportunity: " + (Array.isArray(r.opportunity) ? r.opportunity.join(", ") : r.opportunity));
-                                  if (r.key_learning) parts.push("Key focus: " + r.key_learning);
-                                  return parts.length > 0 ? parts.join("\n\n") : JSON.stringify(r, null, 2);
-                                } catch(e) { return String(examMA.result); }
+                              {(() => {
+                                const raw = currentAttempt?.raw || examMA.result?.raw || (typeof examMA.result === "string" ? examMA.result : "");
+                                if (!raw) return "Score could not be parsed. Try again.";
+                                // Clean up any JSON artifacts for display
+                                return String(raw)
+                                  .replace(/[{}[\]"]/g, "")
+                                  .replace(/,\s*/g, "\n")
+                                  .replace(/scores:\s*/i, "SCORES:\n")
+                                  .replace(/did_well:\s*/i, "\nDID WELL:\n")
+                                  .replace(/opportunity:\s*/i, "\nOPPORTUNITY:\n")
+                                  .replace(/gaps:\s*/i, "\nGAPS:\n")
+                                  .replace(/strengths:\s*/i, "\nSTRENGTHS:\n")
+                                  .replace(/key_learning:\s*/i, "\nKEY FOCUS:\n")
+                                  .trim();
                               })()}
                             </div>
+                            <div style={{ fontSize: 10, color: "#e07830", marginTop: 6 }}>Score format could not be fully parsed — feedback shown as text</div>
                           </div>
                         )}
 
@@ -3702,25 +3801,41 @@ PROGRESS I'VE NOTICED:
                             }}>Revise ({4 - examMA.attempts.length} revision{4 - examMA.attempts.length !== 1 ? "s" : ""} left)</button>
                           )}
                           <button onClick={() => {
-                            // Save best attempt to MA sessions
-                            const best = bestAttempt;
+                            // Re-parse attempts to extract any scores we can
+                            const cleanedAttempts = examMA.attempts.map(a => {
+                              if (a.scores) return a;
+                              if (a.raw) {
+                                const reparsed = parseAIJson(a.raw);
+                                if (reparsed?.scores) return { ...a, ...reparsed };
+                              }
+                              return a;
+                            });
+
+                            // Find best from cleaned attempts
+                            const getTotal = (a) => a?.scores ? [{ key: "describe" }, { key: "cause_effect" }, { key: "evaluate" }, { key: "prescription" }, { key: "biomechanics" }, { key: "communication" }].reduce((sum, sc) => sum + (a.scores[sc.key] || 0), 0) : 0;
+                            const best = cleanedAttempts.length > 0 ? cleanedAttempts.reduce((b, a) => getTotal(a) > getTotal(b) ? a : b, cleanedAttempts[0]) : null;
+
                             const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
                             const debriefText = examMA.debriefMessages.map(m => `${m.role === "user" ? "Mark" : "Examiner"}: ${m.content}`).join("\n");
                             const prescribeDialogText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
                             const fullTranscript = `PRIVATE NOTES:\n${examMA.observations}\nRoot cause: ${examMA.rootCause}\n\nPEER DIALOG:\n${dialogText}\n\nPRESCRIPTION DELIVERY (to peer):\n${prescribeDialogText}\n\nPRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}`;
 
-                            // Build summary with best scores + all attempt feedback
+                            // Build summary — strip raw text to save space, keep structured data
+                            const cleanForSave = (a) => {
+                              const { raw, timestamp, attemptNum, ...rest } = a;
+                              return rest;
+                            };
                             const summaryObj = {
-                              ...(typeof best === "object" ? best : {}),
-                              allAttempts: examMA.attempts.map((a, i) => ({
+                              ...(typeof best === "object" ? cleanForSave(best) : {}),
+                              allAttempts: cleanedAttempts.map((a, i) => ({
                                 attempt: i + 1,
-                                scores: a.scores,
-                                did_well: a.did_well || a.strengths,
-                                opportunity: a.opportunity || a.gaps,
-                                key_learning: a.key_learning,
+                                scores: a.scores || null,
+                                did_well: a.did_well || a.strengths || [],
+                                opportunity: a.opportunity || a.gaps || [],
+                                key_learning: a.key_learning || "",
                               })),
-                              bestAttempt: examMA.attempts.indexOf(bestAttempt) + 1,
-                              totalAttempts: examMA.attempts.length,
+                              bestAttempt: cleanedAttempts.indexOf(best) + 1,
+                              totalAttempts: cleanedAttempts.length,
                             };
 
                             const revCount = examMA.attempts.length - 1;

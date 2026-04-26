@@ -440,7 +440,7 @@ Ask ONE question at a time. Be specific. Sound like Chris, not a textbook.`;
 const MA_TREND_SCORER_SYSTEM = `You are scoring an Alpine Trainer candidate's MA practice session as Chris (the AT assessor/examiner) would score it, using the Fitts & Posner scale. You are comparing to previous sessions to identify trends.
 
 SCORING APPROACH:
-Score the WHOLE INTERACTION holistically — the observation, dialog, prescription delivery, presentation, and examiner Q&A together. Don't score each piece in isolation. A candidate who writes shallow private notes but delivers a strong presentation and handles Q&A well should score higher than one who writes deep notes but can't articulate them.
+Score ONLY what the examiner heard — the peer dialog, prescription delivery to the peer, Mark's presentation to the examiner, and the examiner Q&A. Do NOT consider private notes. Score holistically across the whole interaction.
 
 FITTS & POSNER SCALE (this is how Chris scores):
 1 = Cognitive Low — candidate is guessing, no framework, can't articulate what they see
@@ -2774,12 +2774,39 @@ PROGRESS I'VE NOTICED:
                       </div>
                     </div>
                     {aiScores?.scores ? (
-                      <div style={{ display: "flex", gap: 3 }}>
-                        {[{ key: "describe", l: "D" }, { key: "cause_effect", l: "C" }, { key: "evaluate", l: "E" }, { key: "prescription", l: "P" }, { key: "biomechanics", l: "B" }, { key: "communication", l: "Co" }].map(sc => (
-                          <div key={sc.key} style={{ width: 24, height: 24, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: scoreColor(aiScores.scores[sc.key] || 0), background: `${scoreColor(aiScores.scores[sc.key] || 0)}12`, border: `1px solid ${scoreColor(aiScores.scores[sc.key] || 0)}30` }}>
-                            {aiScores.scores[sc.key] || "—"}
-                          </div>
-                        ))}
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <div style={{ display: "flex", gap: 3 }}>
+                          {[{ key: "describe", l: "D" }, { key: "cause_effect", l: "C" }, { key: "evaluate", l: "E" }, { key: "prescription", l: "P" }, { key: "biomechanics", l: "B" }, { key: "communication", l: "Co" }].map(sc => (
+                            <div key={sc.key} style={{ width: 24, height: 24, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: scoreColor(aiScores.scores[sc.key] || 0), background: `${scoreColor(aiScores.scores[sc.key] || 0)}12`, border: `1px solid ${scoreColor(aiScores.scores[sc.key] || 0)}30` }}>
+                              {aiScores.scores[sc.key] || "—"}
+                            </div>
+                          ))}
+                        </div>
+                        {s.transcript && <button onClick={async (ev) => {
+                          const btn = ev.currentTarget;
+                          btn.textContent = "...";
+                          btn.disabled = true;
+                          try {
+                            const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                            const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                            const parsed = parseAIJson(resp);
+                            if (parsed?.scores) {
+                              const cleanSummary = { ...parsed };
+                              delete cleanSummary.raw;
+                              const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
+                              saveMaSessions(updated);
+                            } else {
+                              btn.textContent = "↻";
+                              btn.disabled = false;
+                            }
+                          } catch(err) {
+                            btn.textContent = "↻";
+                            btn.disabled = false;
+                          }
+                        }} style={{
+                          padding: "2px 6px", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, marginLeft: 2,
+                          background: "rgba(122,154,181,0.08)", border: "1px solid rgba(122,154,181,0.2)", color: "#7a9ab5",
+                        }}>↻</button>}
                       </div>
                     ) : s.transcript ? (
                       <button onClick={async (ev) => {
@@ -2826,11 +2853,11 @@ PROGRESS I'VE NOTICED:
                   </details>
 
                   {/* AI analysis summary */}
-                  {aiScores && (
+                  {(aiScores || s.transcript) && (
                     <details style={{ marginBottom: 8 }}>
                       <summary style={{ fontSize: 12, color: "#a0a0d0", cursor: "pointer", fontWeight: 600 }}>AI analysis</summary>
                       <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(160,160,208,0.04)", marginTop: 4 }}>
-                        {aiScores.scores && (
+                        {aiScores?.scores && (
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                             {[{ key: "describe", label: "Describe" }, { key: "cause_effect", label: "Cause/Effect" }, { key: "evaluate", label: "Evaluate" }, { key: "prescription", label: "Prescription" }, { key: "biomechanics", label: "Bio/Physics" }, { key: "communication", label: "Comm" }].map(sc => (
                               <div key={sc.key} style={{ textAlign: "center", minWidth: 40 }}>
@@ -2840,71 +2867,40 @@ PROGRESS I'VE NOTICED:
                             ))}
                           </div>
                         )}
-                        {didWell.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT YOU DID WELL: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{didWell.join(" · ")}</span></div>}
-                        {opportunity.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>OPPORTUNITY TO IMPROVE: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{opportunity.join(" · ")}</span></div>}
-                        {aiScores.key_learning && <div><span style={{ fontSize: 10, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{aiScores.key_learning}</span></div>}
-                        {!aiScores.scores && didWell.length === 0 && opportunity.length === 0 && !aiScores.key_learning && s.transcript && (
-                          <div>
-                            <div style={{ fontSize: 12, color: "#4d6888", marginBottom: 6 }}>No detailed analysis available.</div>
-                            <button onClick={async (ev) => {
-                              const btn = ev.currentTarget;
-                              btn.textContent = "Generating...";
-                              btn.disabled = true;
-                              try {
-                                const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
-                                const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
-                                const parsed = parseAIJson(resp);
-                                if (parsed) {
-                                  const cleanSummary = { ...parsed };
-                                  delete cleanSummary.raw;
-                                  const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
-                                  saveMaSessions(updated);
-                                } else {
-                                  btn.textContent = "Retry";
-                                  btn.disabled = false;
-                                }
-                              } catch(err) {
-                                console.error("Generate feedback error:", err);
-                                btn.textContent = "Error — Retry";
-                                btn.disabled = false;
-                              }
-                            }} style={{
-                              padding: "6px 12px", borderRadius: 5, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                              background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.25)", color: "#c060a0",
-                            }}>Generate AI Feedback</button>
-                          </div>
+                        {didWell?.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT YOU DID WELL: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{didWell.join(" · ")}</span></div>}
+                        {opportunity?.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>OPPORTUNITY TO IMPROVE: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{opportunity.join(" · ")}</span></div>}
+                        {aiScores?.key_learning && <div><span style={{ fontSize: 10, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{aiScores.key_learning}</span></div>}
+                        {!aiScores?.scores && didWell.length === 0 && opportunity.length === 0 && !aiScores?.key_learning && (
+                          <div style={{ fontSize: 12, color: "#4d6888", marginBottom: 4 }}>No analysis yet — hit Rescore below.</div>
                         )}
-                        {aiScores.scores && didWell.length === 0 && opportunity.length === 0 && !aiScores.key_learning && s.transcript && (
+                        {s.transcript && (
                           <button onClick={async (ev) => {
                             const btn = ev.currentTarget;
-                            btn.textContent = "Generating...";
+                            btn.textContent = "Rescoring...";
                             btn.disabled = true;
                             try {
                               const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
                               const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                               const parsed = parseAIJson(resp);
-                              if (parsed) {
-                                // Merge new feedback with existing scores
-                                const existing = parseSummary(s.summary) || {};
-                                const merged = { ...existing, ...parsed, scores: existing.scores || parsed.scores };
-                                delete merged.raw;
-                                const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(merged) } : x);
+                              if (parsed?.scores) {
+                                const cleanSummary = { ...parsed };
+                                delete cleanSummary.raw;
+                                const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
                                 saveMaSessions(updated);
                               } else {
                                 btn.textContent = "Retry";
                                 btn.disabled = false;
                               }
                             } catch(err) {
-                              console.error("Generate feedback error:", err);
                               btn.textContent = "Error — Retry";
                               btn.disabled = false;
                             }
                           }} style={{
                             marginTop: 6, padding: "6px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer",
                             background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.2)", color: "#c060a0",
-                          }}>Generate Feedback</button>
+                          }}>Rescore</button>
                         )}
-                        {aiScores.allAttempts?.length > 1 && (
+                        {aiScores?.allAttempts?.length > 1 && (
                           <div style={{ marginTop: 6, fontSize: 11, color: "#7a9ab5" }}>
                             {aiScores.allAttempts.length - 1} revision{aiScores.allAttempts.length > 2 ? "s" : ""} · Best: {aiScores.bestAttempt === 1 ? "initial" : `revision ${aiScores.bestAttempt - 1}`}
                           </div>
@@ -3483,10 +3479,15 @@ PROGRESS I'VE NOTICED:
                         <label style={lbl}>What is the root cause?</label>
                         <textarea value={examMA.rootCause} onChange={ev => setExamMA(p => ({ ...p, rootCause: ev.target.value }))} placeholder="What's the primary skill breakdown? What cause-effect chain do you see? Which skill is driving the issue?" style={{ ...txta, minHeight: 60, fontSize: 14, lineHeight: 1.7 }} />
                       </div>
-                      <button onClick={() => setExamMA(p => ({ ...p, phase: "dialog" }))} disabled={!examMA.observations.trim()} style={{
-                        width: "100%", padding: "12px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: examMA.observations.trim() ? "pointer" : "default",
-                        background: "rgba(208,96,96,0.08)", border: "1px solid rgba(208,96,96,0.25)", color: examMA.observations.trim() ? "#d06060" : "#4d6888",
-                      }}>Begin Peer Dialog →</button>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => setExamMA(p => ({ ...p, phase: "dialog" }))} style={{
+                          flex: 1, padding: "12px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer",
+                          background: "rgba(208,96,96,0.08)", border: "1px solid rgba(208,96,96,0.25)", color: "#d06060",
+                        }}>{examMA.observations.trim() ? "Begin Peer Dialog →" : "Skip Notes → Start Dialog"}</button>
+                      </div>
+                      {!examMA.observations.trim() && (
+                        <div style={{ fontSize: 10, color: "#4d6888", marginTop: 4, textAlign: "center" }}>Notes are optional — you can go straight to dialog if your observations are clear</div>
+                      )}
                     </>
                   )}
 
@@ -3754,7 +3755,7 @@ PROGRESS I'VE NOTICED:
                             revisionContext += "Score this attempt on its own merits but note what improved from previous attempts.\n";
                           }
                           const prescribeText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                          const input = `FULL AT MA EXAM SESSION:\n\nMARK'S PRESENTATION TO EXAMINER (technical analysis and WHY):\n${examMA.presentation}\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed this conversation):\n${prescribeText}\n\nEXAMINER Q&A:\n${debriefText}\n\nMARK'S PRIVATE NOTES (for comparison — did he articulate everything he saw?):\nObservations: ${examMA.observations}\nRoot cause: ${examMA.rootCause}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nIMPORTANT: Score based on what Mark PRESENTED and how he handled the Q&A, not just his private notes. Evaluate TWO aspects of the prescription: (1) Did he connect the task to the subject's intent when delivering it to the peer? Did the peer understand? (2) Did he explain the technical WHY to the examiner — biomechanics, physics, skill relationships? If his private notes show deeper thinking than his presentation, that's a gap in communication. In your response JSON, include two additional fields:\n"did_well": ["list of specific things Mark did well in this MA"]\n"opportunity": ["list of specific areas where Mark can improve"]\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                          const input = `SCORE ONLY WHAT THE EXAMINER HEARD:\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescribeText}\n\nMARK'S PRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nScore ONLY what the examiner heard. Do NOT consider any private notes. Evaluate: (1) Did he connect the task to the subject's intent when delivering it? (2) Did he explain the technical WHY to the examiner?\n"did_well": ["list of specific things Mark did well"]\n"opportunity": ["list of specific areas to improve"]\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
                           const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                           const parsed = parseAIJson(resp);
 

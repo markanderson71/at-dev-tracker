@@ -535,7 +535,7 @@ async function callClaude(messages, systemOverride) {
       body: JSON.stringify({
         _action: "claude",
         model: "claude-sonnet-4-6",
-        max_tokens: 1000,
+        max_tokens: 4000,
         system: systemOverride || AT_COACH_SYSTEM,
         messages,
       }),
@@ -2786,16 +2786,25 @@ PROGRESS I'VE NOTICED:
                         const btn = ev.currentTarget;
                         btn.textContent = "Scoring...";
                         btn.disabled = true;
-                        const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}`;
-                        const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
-                        const parsed = parseAIJson(resp);
-                        if (parsed?.scores) {
-                          const cleanSummary = { ...parsed };
-                          delete cleanSummary.raw;
-                          const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
-                          saveMaSessions(updated);
-                        } else {
-                          btn.textContent = "Retry";
+                        try {
+                          const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}`;
+                          const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                          console.log("Score response:", resp?.slice(0, 300));
+                          const parsed = parseAIJson(resp);
+                          console.log("Parsed scores:", parsed?.scores);
+                          if (parsed?.scores) {
+                            const cleanSummary = { ...parsed };
+                            delete cleanSummary.raw;
+                            const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
+                            saveMaSessions(updated);
+                          } else {
+                            console.warn("Score parsing failed. Raw response:", resp);
+                            btn.textContent = "Retry";
+                            btn.disabled = false;
+                          }
+                        } catch(err) {
+                          console.error("Score error:", err);
+                          btn.textContent = "Error";
                           btn.disabled = false;
                         }
                       }} style={{
@@ -2821,9 +2830,80 @@ PROGRESS I'VE NOTICED:
                     <details style={{ marginBottom: 8 }}>
                       <summary style={{ fontSize: 12, color: "#a0a0d0", cursor: "pointer", fontWeight: 600 }}>AI analysis</summary>
                       <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(160,160,208,0.04)", marginTop: 4 }}>
+                        {aiScores.scores && (
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                            {[{ key: "describe", label: "Describe" }, { key: "cause_effect", label: "Cause/Effect" }, { key: "evaluate", label: "Evaluate" }, { key: "prescription", label: "Prescription" }, { key: "biomechanics", label: "Bio/Physics" }, { key: "communication", label: "Comm" }].map(sc => (
+                              <div key={sc.key} style={{ textAlign: "center", minWidth: 40 }}>
+                                <div style={{ fontSize: 18, fontWeight: 800, color: scoreColor(aiScores.scores[sc.key] || 0) }}>{aiScores.scores[sc.key] || "—"}</div>
+                                <div style={{ fontSize: 9, color: "#7a9ab5" }}>{sc.label}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {didWell.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT YOU DID WELL: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{didWell.join(" · ")}</span></div>}
                         {opportunity.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>OPPORTUNITY TO IMPROVE: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{opportunity.join(" · ")}</span></div>}
                         {aiScores.key_learning && <div><span style={{ fontSize: 10, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{aiScores.key_learning}</span></div>}
+                        {!aiScores.scores && didWell.length === 0 && opportunity.length === 0 && !aiScores.key_learning && s.transcript && (
+                          <div>
+                            <div style={{ fontSize: 12, color: "#4d6888", marginBottom: 6 }}>No detailed analysis available.</div>
+                            <button onClick={async (ev) => {
+                              const btn = ev.currentTarget;
+                              btn.textContent = "Generating...";
+                              btn.disabled = true;
+                              try {
+                                const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}`;
+                                const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                                const parsed = parseAIJson(resp);
+                                if (parsed) {
+                                  const cleanSummary = { ...parsed };
+                                  delete cleanSummary.raw;
+                                  const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(cleanSummary) } : x);
+                                  saveMaSessions(updated);
+                                } else {
+                                  btn.textContent = "Retry";
+                                  btn.disabled = false;
+                                }
+                              } catch(err) {
+                                console.error("Generate feedback error:", err);
+                                btn.textContent = "Error — Retry";
+                                btn.disabled = false;
+                              }
+                            }} style={{
+                              padding: "6px 12px", borderRadius: 5, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                              background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.25)", color: "#c060a0",
+                            }}>Generate AI Feedback</button>
+                          </div>
+                        )}
+                        {aiScores.scores && didWell.length === 0 && opportunity.length === 0 && !aiScores.key_learning && s.transcript && (
+                          <button onClick={async (ev) => {
+                            const btn = ev.currentTarget;
+                            btn.textContent = "Generating...";
+                            btn.disabled = true;
+                            try {
+                              const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}`;
+                              const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                              const parsed = parseAIJson(resp);
+                              if (parsed) {
+                                // Merge new feedback with existing scores
+                                const existing = parseSummary(s.summary) || {};
+                                const merged = { ...existing, ...parsed, scores: existing.scores || parsed.scores };
+                                delete merged.raw;
+                                const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(merged) } : x);
+                                saveMaSessions(updated);
+                              } else {
+                                btn.textContent = "Retry";
+                                btn.disabled = false;
+                              }
+                            } catch(err) {
+                              console.error("Generate feedback error:", err);
+                              btn.textContent = "Error — Retry";
+                              btn.disabled = false;
+                            }
+                          }} style={{
+                            marginTop: 6, padding: "6px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                            background: "rgba(192,96,160,0.08)", border: "1px solid rgba(192,96,160,0.2)", color: "#c060a0",
+                          }}>Generate Feedback</button>
+                        )}
                         {aiScores.allAttempts?.length > 1 && (
                           <div style={{ marginTop: 6, fontSize: 11, color: "#7a9ab5" }}>
                             {aiScores.allAttempts.length - 1} revision{aiScores.allAttempts.length > 2 ? "s" : ""} · Best: {aiScores.bestAttempt === 1 ? "initial" : `revision ${aiScores.bestAttempt - 1}`}

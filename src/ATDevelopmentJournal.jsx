@@ -1326,6 +1326,37 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     apiUpdate("JournalEntries", { id: "_MA_SESSIONS", data: JSON.stringify(sessions) });
   };
 
+  const buildScoreInput = (session) => {
+    const ctx = (session.context || "").toLowerCase();
+    const transcript = session.transcript || "";
+    const who = session.who || "unknown";
+    const activity = session.activity || "unknown";
+    const jsonReminder = `\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+
+    if (ctx.includes("at ma exam")) {
+      // AT MA Exam — score only what examiner heard
+      // Transcript format: PRIVATE NOTES:\n...\nPEER DIALOG:\n...\nPRESCRIPTION DELIVERY:\n...\nPRESENTATION TO EXAMINER:\n...\nEXAMINER Q&A:\n...
+      const peerDialog = transcript.match(/PEER DIALOG:\n([\s\S]*?)(?=\nPRESCRIPTION DELIVERY)/)?.[1]?.trim() || "";
+      const prescription = transcript.match(/PRESCRIPTION DELIVERY[^:]*:\n([\s\S]*?)(?=\nPRESENTATION TO EXAMINER)/)?.[1]?.trim() || "";
+      const presentation = transcript.match(/PRESENTATION TO EXAMINER:\n([\s\S]*?)(?=\nEXAMINER Q&A)/)?.[1]?.trim() || "";
+      const examinerQA = transcript.match(/EXAMINER Q&A:\n([\s\S]*?)$/)?.[1]?.trim() || "";
+
+      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}\n\nScore TWO communication audiences: (1) Did Mark connect the prescription to the peer's intent? (2) Did Mark demonstrate technical depth to the examiner organized by phase?${jsonReminder}`;
+    }
+
+    if (ctx.includes("examiner q&a") || ctx.includes("written ma") || ctx.includes("free write")) {
+      // Written MA — single audience (examiner), written analysis + dialog
+      const parts = transcript.split(/---\s*EXAMINER Q&A\s*---/);
+      const analysis = (parts[0] || "").trim();
+      const dialog = (parts[1] || "").trim();
+
+      return `SCORE THIS WRITTEN MA WITH EXAMINER Q&A — single audience (examiner only, no peer delivery):\n\nWRITTEN ANALYSIS:\n${analysis}\n\nEXAMINER Q&A:\n${dialog}\n\nContext: ${who}, ${activity}\n\nThis is a written MA followed by examiner dialog. There is no peer delivery — score Communication based on clarity and technical depth of the written analysis and examiner responses only.${jsonReminder}`;
+    }
+
+    // Default — basic MA observation/analysis (scenario drill, video analysis, manual entry, etc.)
+    return `SCORE THIS MA OBSERVATION/ANALYSIS — this is a practice session without peer dialog or examiner Q&A:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nThis is a practice MA without a live peer dialog. Score based on the quality of the observation, analysis, and any prescription provided in the text. Communication is scored on clarity and organization of the written analysis only.${jsonReminder}`;
+  };
+
   const saveVideos = (vids) => {
     setVideos(vids);
     apiUpdate("JournalEntries", { id: "_VIDEOS", data: JSON.stringify(vids) });
@@ -2923,7 +2954,7 @@ PROGRESS I'VE NOTICED:
                           : <button onClick={async () => {
                               setRescoringId(s.id);
                               try {
-                                const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                                const input = buildScoreInput(s);
                                 const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                                 console.log("Rescore response:", resp?.slice(0, 300));
                                 const parsed = parseAIJson(resp);
@@ -2954,7 +2985,7 @@ PROGRESS I'VE NOTICED:
                         : <button onClick={async () => {
                             setRescoringId(s.id);
                             try {
-                              const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                              const input = buildScoreInput(s);
                               const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                               console.log("Score response:", resp?.slice(0, 300));
                               const parsed = parseAIJson(resp);
@@ -3017,7 +3048,7 @@ PROGRESS I'VE NOTICED:
                             : <button onClick={async () => {
                                 setRescoringId(s.id);
                                 try {
-                                  const input = `MA SESSION TO SCORE:\n\n${s.transcript}\n\nContext: ${s.who || "unknown"}, ${s.activity || "unknown"}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                                  const input = buildScoreInput(s);
                                   const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
                                   const parsed = parseAIJson(resp);
                                   if (parsed?.scores) {

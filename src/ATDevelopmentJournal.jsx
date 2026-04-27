@@ -1220,26 +1220,51 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   const [editingTheme, setEditingTheme] = useState(null);
   const [editingCheckpoint, setEditingCheckpoint] = useState(null);
   const [selectedThemeFilter, setSelectedThemeFilter] = useState(null);
-  const [sparringMessages, setSparringMessages] = useState([]);
+  const [sparringMessages, setSparringMessages] = useState(() => {
+    try { const saved = window.localStorage.getItem("at_sparring"); if (saved) { const p = JSON.parse(saved); return p.sparringMessages || []; } } catch(e) {} return [];
+  });
   const [sparringInput, setSparringInput] = useState("");
   const [sparringLoading, setSparringLoading] = useState(false);
-  const [sparringMode, setSparringMode] = useState("open");
+  const [sparringMode, setSparringMode] = useState(() => {
+    try { const saved = window.localStorage.getItem("at_sparring"); if (saved) { const p = JSON.parse(saved); return p.sparringMode || "open"; } } catch(e) {} return "open";
+  });
   // Written MA (free practice)
-  const [writtenMA, setWrittenMA] = useState({ who: "", activity: "", conditions: "", transcript: "", videoUrl: "", videoSkier: "", videoTime: "" });
-  const [writtenMAResult, setWrittenMAResult] = useState(null);
+  const [writtenMA, setWrittenMA] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem("at_writtenMA");
+      if (saved) { const p = JSON.parse(saved); if (p.writtenMA) return p.writtenMA; }
+    } catch(e) {}
+    return { who: "", activity: "", conditions: "", transcript: "", videoUrl: "", videoSkier: "", videoTime: "" };
+  });
+  const [writtenMAResult, setWrittenMAResult] = useState(() => {
+    try { const saved = window.localStorage.getItem("at_writtenMA"); if (saved) { const p = JSON.parse(saved); return p.writtenMAResult || null; } } catch(e) {} return null;
+  });
   const [writtenMAScenario, setWrittenMAScenario] = useState(null);
-  const [writtenMADialog, setWrittenMADialog] = useState([]);
-  const [writtenMAPhase, setWrittenMAPhase] = useState("setup");
+  const [writtenMADialog, setWrittenMADialog] = useState(() => {
+    try { const saved = window.localStorage.getItem("at_writtenMA"); if (saved) { const p = JSON.parse(saved); return p.writtenMADialog || []; } } catch(e) {} return [];
+  });
+  const [writtenMAPhase, setWrittenMAPhase] = useState(() => {
+    try { const saved = window.localStorage.getItem("at_writtenMA"); if (saved) { const p = JSON.parse(saved); return p.writtenMAPhase || "setup"; } } catch(e) {} return "setup";
+  });
   const [writtenMALoading, setWrittenMALoading] = useState(false);
-  // AT MA Exam simulation
-  const [examMA, setExamMA] = useState({
-    phase: "setup", videoUrl: "", videoSkier: "", videoTime: "", who: "", activity: "", conditions: "",
-    observations: "", rootCause: "",
-    dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [],
-    presentation: "",
-    debriefMessages: [], result: null,
-    attempts: [], // [{ scores, strengths, gaps, improvements, key_learning, timestamp }]
-    attemptNumber: 1,
+  // AT MA Exam simulation — load from localStorage if mid-session
+  const [examMA, setExamMA] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem("at_examMA");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.phase && parsed.phase !== "setup") return parsed;
+      }
+    } catch(e) {}
+    return {
+      phase: "setup", videoUrl: "", videoSkier: "", videoTime: "", who: "", activity: "", conditions: "",
+      observations: "", rootCause: "",
+      dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [],
+      presentation: "",
+      debriefMessages: [], result: null,
+      attempts: [],
+      attemptNumber: 1,
+    };
   });
   const [examMALoading, setExamMALoading] = useState(false);
   const [aiAssessmentLoading, setAiAssessmentLoading] = useState(false);
@@ -1248,7 +1273,40 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   const [saveError, setSaveError] = useState(null);
   const [challengeLoading, setChallengeLoading] = useState(false);
   const [challengeResponse, setChallengeResponse] = useState(null);
-  const [analyzingMA, setAnalyzingMA] = useState(null); // session id being analyzed
+  const [analyzingMA, setAnalyzingMA] = useState(null);
+
+  // Persist exam state to localStorage on every change
+  useEffect(() => {
+    try {
+      if (examMA.phase !== "setup") {
+        window.localStorage.setItem("at_examMA", JSON.stringify(examMA));
+      } else {
+        window.localStorage.removeItem("at_examMA");
+      }
+    } catch(e) {}
+  }, [examMA]);
+
+  // Persist written MA state
+  useEffect(() => {
+    try {
+      if (writtenMAPhase !== "setup") {
+        window.localStorage.setItem("at_writtenMA", JSON.stringify({ writtenMA, writtenMAPhase, writtenMADialog, writtenMAResult }));
+      } else {
+        window.localStorage.removeItem("at_writtenMA");
+      }
+    } catch(e) {}
+  }, [writtenMA, writtenMAPhase, writtenMADialog, writtenMAResult]);
+
+  // Persist sparring messages
+  useEffect(() => {
+    try {
+      if (sparringMessages.length > 0) {
+        window.localStorage.setItem("at_sparring", JSON.stringify({ sparringMode, sparringMessages }));
+      } else {
+        window.localStorage.removeItem("at_sparring");
+      }
+    } catch(e) {}
+  }, [sparringMessages, sparringMode]);
 
   const saveTimerRef = useRef({});
   const savedIdsRef = useRef(new Set());
@@ -3874,12 +3932,16 @@ PROGRESS I'VE NOTICED:
                         <input value={examMA.videoUrl} onChange={ev => setExamMA(p => ({ ...p, videoUrl: ev.target.value }))} placeholder="YouTube or Google Drive link to the skiing you'll analyze" style={{ ...inp, fontSize: 13 }} />
                       </div>
                       {examMA.videoUrl && (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
-                          <div><label style={lbl}>Skier description</label><input value={examMA.videoSkier || ""} onChange={ev => setExamMA(p => ({ ...p, videoSkier: ev.target.value }))} placeholder="e.g., Red jacket, second skier" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
-                          <div><label style={lbl}>Video time</label><input value={examMA.videoTime || ""} onChange={ev => setExamMA(p => ({ ...p, videoTime: ev.target.value }))} placeholder="e.g., 0:32 - 1:15" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
+                        <div style={{ marginBottom: 8 }}>
+                          <label style={lbl}>Video time range</label>
+                          <input value={examMA.videoTime || ""} onChange={ev => setExamMA(p => ({ ...p, videoTime: ev.target.value }))} placeholder="e.g., 0:32 - 1:15" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} />
                         </div>
                       )}
                       {(() => { const yt = (examMA.videoUrl || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/); return yt ? <a href={examMA.videoUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginBottom: 8 }}><img src={`https://img.youtube.com/vi/${yt[1]}/mqdefault.jpg`} alt="" style={{ width: "100%", maxWidth: 320, borderRadius: 8 }} /></a> : null; })()}
+                      <div style={{ marginBottom: 8 }}>
+                        <label style={lbl}>Skier description</label>
+                        <input value={examMA.videoSkier || ""} onChange={ev => setExamMA(p => ({ ...p, videoSkier: ev.target.value }))} placeholder="e.g., Red jacket, second skier from left" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} />
+                      </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
                         <div><label style={lbl}>Fellow candidate</label>
                           <select value={examMA.who} onChange={ev => setExamMA(p => ({ ...p, who: ev.target.value }))} style={{ ...inp, fontSize: 12, padding: "4px 6px" }}>

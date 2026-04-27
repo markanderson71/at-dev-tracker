@@ -1072,13 +1072,16 @@ EDGE-SNOW INTERACTION:
 - Edge creates platform to resist centripetal forces through the arc
 
 EDGING-ROTARY RELATIONSHIP:
-- Edging and rotary exist on a spectrum — more of one typically means less of the other
+- Edge creates the PLATFORM, rotary STEERS on it
+- The ski needs minimal edge engagement that can hold in the given snow before rotary is effective — once the edge grips, leg rotation steers the ski through the arc
+- Without edge grip: rotary just pivots/skids — no platform to steer on
+- With edge grip: rotary steers the ski through a controlled arc on the edge platform
 - Deeply edged ski resists rotation — edge locked into snow
 - Flat ski rotates easily but has no lateral grip
-- Most turns require a BLEND that changes through turn phases: initiation (more rotary), shaping (edge increases, sidecut works), finish (blend shifts for next turn)
+- Most turns require a BLEND that changes through turn phases: initiation (edge engages to create grip, rotary begins steering), shaping (edge engagement increases, sidecut and steering work together), finish (blend shifts for next turn)
 - Pure sidecut rarely produces ideal outcome through entire turn — rotary supplements edging
 - Steering angle: difference between where ski points and direction of travel. Pure carve = zero. Rotary input creates steering angle.
-- Spectrum: pure carve (max edge) to steered (blend) to skidded (max steering angle)
+- Spectrum: pure carve (max edge) to steered (edge platform + rotary blend) to skidded (rotary without edge platform)
 
 CONDITIONS — HOW THEY AFFECT SKI/SNOW INTERACTION:
 - Hard pack: supports higher edge angles, rewards precision, exposes edge timing flaws
@@ -1092,8 +1095,17 @@ CONDITIONS — HOW THEY AFFECT SKI/SNOW INTERACTION:
 
 PRESSURE MANAGEMENT:
 - Pressure builds naturally from centripetal forces during a turn
+- Centripetal force formula: F = mv²/r — force equals mass times velocity squared divided by radius
+  - If velocity INCREASES: force increases exponentially (v² — double the speed = 4x the force)
+  - If radius DECREASES (tighter turn): force increases
+  - If mass increases: force increases
+  - This is why speed compounds everything and why short turns are more demanding than long turns
+- Turn radius defines the tightness of the arc. A smaller radius creates a tighter, more acute arc. Determined by sidecut geometry, edge angle, and steering input.
+- The skier can also apply force actively by pushing (extending) against the ski — this adds to the centripetal forces already present
 - First half (initiation to fall line): pressure relatively low — momentum and gravity aligned
 - Second half (fall line to finish): pressure builds as momentum and ski direction diverge — gravity and inertia compound
+- ALL skiers feel the greatest pressure build below the fall line — this is physics
+- However, skilled skiers align to those forces HIGHER in the turn — engaging edge earlier, positioning CM earlier — so they are already balanced against the forces before the pressure peaks. They work WITH the forces rather than reacting to them at the bottom.
 - Ski pushes on snow, snow pushes back (ground reaction force) from outside the turn
 - Skier balances between gravity (down/inside) and ground reaction force (outside) through inclination and angulation
 - Pressure as a resource: Absorb (flex = edge lightens), Resist (extend = sustain edge), Redirect (use energy for next turn)

@@ -3358,13 +3358,14 @@ PROGRESS I'VE NOTICED:
                   </div>
 
                   {/* Delete session */}
-                  <div style={{ marginTop: 8, textAlign: "right" }}>
+                  <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.04)", textAlign: "right" }}>
                     <button onClick={() => {
                       if (confirm("Delete this MA session? This cannot be undone.")) {
                         saveMaSessions(maSessions.filter(x => x.id !== s.id));
                       }
                     }} style={{
-                      background: "none", border: "none", color: "#3a5068", fontSize: 10, cursor: "pointer",
+                      background: "none", border: "1px solid rgba(224,80,40,0.15)", borderRadius: 4, padding: "4px 10px",
+                      color: "#e05028", fontSize: 11, cursor: "pointer",
                     }}>Delete session</button>
                   </div>
                 </Card>

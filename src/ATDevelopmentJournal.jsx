@@ -503,8 +503,8 @@ Cause/Effect:
 - 4: All of 3 PLUS prioritizes the PRIMARY fundamental driving the cascade, identifies Z-shaped patterns across phases, connects through three-joint constraint and edging-pressure interactions
 
 Evaluate:
-- 2: Does not check intent or task compliance. Jumps straight to diagnosis without comparing what was intended vs what was observed. No verification through dialog.
-- 3: Checks task compliance OR verifies intent through dialog. Compares intended vs observed performance in some form — the comparison exists even if not referencing every specific outcome measure. Demonstrates awareness that evaluation requires understanding what the skier was trying to do.
+- 2: Does not check intent or task compliance. Jumps straight to diagnosis without comparing what was intended vs what was observed. No verification through dialog. The candidate prescribes without first understanding what the skier was trying to do.
+- 3: Verifies intent through dialog (asking what the skier was working on, what they were trying to achieve) AND/OR checks task compliance. Compares intended vs observed performance in some form. Asking the skier about their focus and then diagnosing based on what they said IS evaluation — it demonstrates that the candidate understands evaluation requires knowing intent before diagnosing.
 - 4: All of 3 PLUS explicitly compares using speed/turn shape/size/line/ski-snow interaction, applies diagnostic framework (skill deficiency vs accuracy of use vs condition mismatch vs tactical upgrade), considers how conditions interact
 
 Prescription:
@@ -1433,7 +1433,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
       console.log("Extracted sections — dialog:", peerDialog.length, "chars, prescription:", prescription.length, "chars, presentation:", presentation.length, "chars, Q&A:", examinerQA.length, "chars");
 
-      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}\n\nScore TWO communication audiences: (1) Did Mark connect the prescription to the peer's intent? (2) Did Mark demonstrate technical depth to the examiner organized by phase?\n\nIMPORTANT: Examiner questions are verifiers, not justifiers. If Mark demonstrates deeper understanding in Q&A than in his initial presentation, that should RAISE the relevant scores. Score based on the TOTAL picture of what the examiner heard across all phases.${jsonReminder}`;
+      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}\n\nSCORING NOTES:\n- Score TWO communication audiences: (1) peer delivery connected to intent? (2) examiner presentation organized by phase?\n- Examiner questions are verifiers, not justifiers. Prompted depth can raise scores but typically caps at 4.\n- Evidence for ANY criterion can appear in ANY section. Dialog verification of intent counts toward Evaluate. Prescription delivery counts toward Communication AND Prescription. Check ALL sections when scoring each criterion.\n- Score based on the TOTAL picture across all phases.${jsonReminder}`;
     }
 
     if (isWrittenMA) {

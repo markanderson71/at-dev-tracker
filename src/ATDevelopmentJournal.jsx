@@ -451,23 +451,44 @@ const MA_TREND_SCORER_SYSTEM = `You are scoring an Alpine Trainer candidate's MA
 SCORING APPROACH:
 Score ONLY what the examiner heard — the peer dialog, prescription delivery to the peer, Mark's presentation to the examiner, and the examiner Q&A. Do NOT consider private notes. Score holistically across the whole interaction.
 
-FITTS & POSNER SCALE (this is how Chris scores):
-1 = Cognitive Low — candidate is guessing, no framework, can't articulate what they see
-2 = Cognitive High — understands concepts, uses correct terminology, but application is surface-level. Attempts the work but misses key elements or lacks specificity.
-3 = Associative Low — L3-level competence. Does the work: describes by phase, sees skill interactions, connects cause to effect (A→B or A→B→C), chooses appropriate IDP tasks, uses correct terminology, checks intent. This is SOLID instructor-level work. Most L3 instructors sit here.
-4 = Associative High (PASS) — AT-level. Everything a 3 does PLUS: prioritizes the PRIMARY fundamental driving the cascade, uses DIRT for precision, applies the diagnostic framework (skill vs accuracy vs conditions vs tactical), explains physics (sidecut, forces, three-joint constraint), distinguishes inside/outside ski behavior, communicates to TWO audiences, adapts to conditions. This is the standard.
-5 = Autonomous Low — Consistently above AT standard. Analysis is fluid, precise, adapted. Communication to both audiences is natural.
-6 = Autonomous High — Mastery. Examiner-level depth and precision on every criterion.
+FITTS & POSNER SCALE — HOW CHRIS THINKS WHEN SCORING:
+Chris asks three questions for each criterion: Does the candidate SEE it? Does it APPEAR in their work? Is it CONSISTENT?
+
+1 = Not observed or not present — the candidate doesn't see it or attempt it at all
+2 = Beginning to appear — the candidate sees it and attempts it, but it's surface-level or incomplete. The essential elements are emerging but not formed.
+3 = Appears but not with consistency — the candidate demonstrates the skill, but it's inconsistent. Sometimes they get it, sometimes they miss pieces. They may do it well in one part of the MA but not carry it through. L3-level competence — the work is solid but not reliably AT-level.
+4 = Appears regularly at a satisfactory level (PASS) — the candidate demonstrates the skill consistently across the whole interaction at AT standard. This is the bar.
+5 = Frequently, above required level — consistently above AT standard with precision and fluidity
+6 = Continuously, at a superior level — examiner-level mastery
+
+PROMPTED vs UNPROMPTED — this affects where on the scale it lands:
+- If Mark demonstrates a concept WITHOUT the examiner asking about it — it is genuinely present. Depending on consistency and depth, this could be 4, 5, or 6.
+- If Mark demonstrates a concept only AFTER the examiner probes for it — it is present but needed prompting. This typically caps at 4. The skill exists but it's not yet autonomous — Mark needed the examiner to draw it out.
+- If the examiner probes and Mark STILL can't demonstrate it — it's not present at that level. The prompting revealed a gap.
+- Unprompted + consistent = 5-6 (autonomous). Prompted + accurate = 4 (associative, at standard). Inconsistent whether prompted or not = 3 (associative, developing).
+
+KEY: The difference between 3 and 4 is CONSISTENCY, not perfection.
+- A candidate who demonstrates AT-level analysis once but reverts to L3 thinking elsewhere = 3
+- A candidate who demonstrates AT-level analysis throughout the interaction = 4
+- A candidate who demonstrates it without being asked and does it naturally = 5+
+- Chris does NOT require every AT-level concept to give a 4. He requires that what IS presented appears REGULARLY and at a SATISFACTORY level.
+
+SOPHISTICATION AND CONCISENESS:
+- A concise statement can demonstrate MORE understanding than a lengthy explanation. "The extension timing at transition is driving the late edge engagement" condenses a multi-skill cascade into one sentence — that's sophistication, not absence.
+- If something isn't explicitly mentioned, consider whether it's IMPLIED by what IS said. A candidate who says "the inside leg needs to shorten faster to allow the CM to cross" has implied inclination, ski-to-ski pressure, and transition mechanics without naming each one.
+- Score the THINKING behind the words, not word count. A wordy explanation that walks through every step may be LESS sophisticated than a condensed statement that captures the same insight efficiently.
+- Effective, concise, simple, well-understood communication is often a sign of HIGHER level thinking — making complex concepts accessible is harder than being verbose and technical. This applies especially to peer delivery where the AT must make deep analysis feel simple and relevant.
+- If you're unsure whether brevity indicates depth or gap — look at the REST of the interaction for evidence. Does the candidate demonstrate the understanding elsewhere? Do their other statements support a deeper read?
+
+CALIBRATE AGAINST CHRIS'S KNOWN ASSESSMENT:
+If mentor development assessments are provided, use them as your calibration. If Chris says Mark's cause-effect "lacks specific timing, phase and impacted ski performance," then don't give a 4 on cause/effect unless Mark actually addresses timing, phase, AND ski performance impact CONSISTENTLY in THIS session. If Chris says Mark "jumps to prescription without verifying," don't give a 4 on prescription unless Mark verified through dialog. The mentor assessment is the ground truth.
 
 CRITICAL SCORING GUIDANCE:
 The advanced criteria (DIRT, diagnostic framework, inside/outside ski independence, sidecut physics, Z-shaped patterns, conditions adaptation) define what separates a 3 from a 4 — NOT what separates a 2 from a 3.
-- If Mark describes by phase, identifies multiple skill interactions, chooses an appropriate task, connects to intent, and uses correct terminology — that is a 3 even if he doesn't use DIRT explicitly or explain sidecut physics.
-- If Mark does all of the above AND adds DIRT precision, prioritizes the primary fundamental, explains the physics, distinguishes inside/outside ski — that is a 4.
-- A 2 means the essential elements are only beginning to appear — the candidate is attempting but fundamentally missing key components (no phase specificity, single-skill thinking, no cause-effect, vague or missing prescription).
+- If Mark describes by phase, identifies multiple skill interactions, chooses an appropriate task, connects to intent, and uses correct terminology — that is a 3 even if he doesn't use DIRT explicitly or explain sidecut physics. The essential elements APPEAR.
+- If Mark does all of the above AND adds AT-level depth CONSISTENTLY — that is a 4.
+- A 2 means the essential elements are only BEGINNING to appear — the candidate is attempting but fundamentally missing key components.
 Do NOT score a 2 just because AT-level depth is missing. Score a 2 only when L3-level competence is missing.
-
-CALIBRATE AGAINST CHRIS'S KNOWN ASSESSMENT:
-If mentor development assessments are provided, use them as your calibration. If Chris says Mark's cause-effect "lacks specific timing, phase and impacted ski performance," then don't give a 4 on cause/effect unless Mark actually addresses timing, phase, AND ski performance impact in THIS session. If Chris says Mark "jumps to prescription without verifying," don't give a 4 on prescription unless Mark actually verified through dialog first. The mentor assessment is the ground truth — your scores should reflect whether Mark has addressed what Chris is pushing on.
 
 SCORE THESE CRITERIA — what each level looks like:
 
@@ -502,14 +523,14 @@ Communication:
 - 4: All of 3 PLUS distinct two-audience delivery (peer: connected to intent / examiner: organized by phase with DIRT precision), clean efficient AT communication style
 
 HOW TO SCORE THE EXAMINER Q&A:
-Examiner questions are NOT inherently negative — they serve multiple purposes:
-- Checking for GREATER understanding (can bring scores UP if Mark demonstrates depth he didn't initially present)
-- Validating or clarifying what Mark said (neutral — the examiner is confirming)
-- Verifying understanding (neutral — making sure Mark truly grasps it)
-- Seeing if Mark can approach from a different direction (positive if he can, reveals flexibility)
-Score based on HOW MARK RESPONDS to questions, not on the fact that questions were asked.
-A strong Q&A response that demonstrates deeper understanding than the initial presentation should RAISE the relevant score, not leave it where the presentation alone would have placed it.
-A weak Q&A response that reveals the initial presentation was surface-level confirms the lower score.
+Examiner questions are verifiers, not justifiers. They serve multiple purposes:
+- Checking for GREATER understanding (can bring scores UP)
+- Validating or clarifying what Mark said
+- Verifying understanding
+- Seeing if Mark can approach from a different direction
+Score based on HOW MARK RESPONDS, not on the fact that questions were asked.
+If Mark demonstrates depth in Q&A that he didn't present unprompted — this is PROMPTED demonstration. It shows the skill is present but not yet autonomous. This can raise a 2 to a 3, or a 3 to a 4, but typically not higher than 4 since it required prompting.
+If Mark presented it unprompted AND deepens it further in Q&A — that confirms a 4+ score.
 
 COMPARE to previous sessions. Identify what IMPROVED, what PERSISTS as a gap, and what's NEW.
 
@@ -1381,18 +1402,29 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     const activity = session.activity || "unknown";
     const jsonReminder = `\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
 
-    if (ctx.includes("at ma exam")) {
+    // Detect type by CONTENT, not just context label
+    const hasPeerDialog = transcript.includes("PEER DIALOG:");
+    const hasPrescription = /PRESCRIPTION DELIVER[A-Z]*[^:]*:/i.test(transcript);
+    const hasPresentation = transcript.includes("PRESENTATION TO EXAMINER:");
+    const hasExaminerQA = /EXAMINER Q&A|--- EXAMINER/i.test(transcript);
+    const isATExam = ctx.includes("at ma exam") || (hasPeerDialog && hasPresentation);
+    const isWrittenMA = !isATExam && (ctx.includes("examiner q&a") || ctx.includes("free write") || (hasExaminerQA && !hasPeerDialog));
+
+    console.log("buildScoreInput type:", isATExam ? "AT Exam" : isWrittenMA ? "Written MA" : "Default", "| hasPeerDialog:", hasPeerDialog, "| hasPresentation:", hasPresentation, "| hasPrescription:", hasPrescription);
+
+    if (isATExam) {
       // AT MA Exam — score only what examiner heard
-      // Transcript format: PRIVATE NOTES:\n...\nPEER DIALOG:\n...\nPRESCRIPTION DELIVERY:\n...\nPRESENTATION TO EXAMINER:\n...\nEXAMINER Q&A:\n...
-      const peerDialog = transcript.match(/PEER DIALOG:\n([\s\S]*?)(?=\nPRESCRIPTION DELIVERY)/)?.[1]?.trim() || "";
-      const prescription = transcript.match(/PRESCRIPTION DELIVERY[^:]*:\n([\s\S]*?)(?=\nPRESENTATION TO EXAMINER)/)?.[1]?.trim() || "";
-      const presentation = transcript.match(/PRESENTATION TO EXAMINER:\n([\s\S]*?)(?=\nEXAMINER Q&A)/)?.[1]?.trim() || "";
+      const peerDialog = transcript.match(/PEER DIALOG:\n([\s\S]*?)(?=\n(?:PRESCRIPTION|PRESENTATION))/)?.[1]?.trim() || "";
+      const prescription = transcript.match(/PRESCRIPTION[^:]*:\n([\s\S]*?)(?=\nPRESENTATION TO EXAMINER)/)?.[1]?.trim() || "";
+      const presentation = transcript.match(/PRESENTATION TO EXAMINER:\n([\s\S]*?)(?=\nEXAMINER Q&A)/)?.[1]?.trim() || transcript.match(/PRESENTATION TO EXAMINER:\n([\s\S]*?)$/)?.[1]?.trim() || "";
       const examinerQA = transcript.match(/EXAMINER Q&A:\n([\s\S]*?)$/)?.[1]?.trim() || "";
+
+      console.log("Extracted sections — dialog:", peerDialog.length, "chars, prescription:", prescription.length, "chars, presentation:", presentation.length, "chars, Q&A:", examinerQA.length, "chars");
 
       return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}\n\nScore TWO communication audiences: (1) Did Mark connect the prescription to the peer's intent? (2) Did Mark demonstrate technical depth to the examiner organized by phase?\n\nIMPORTANT: Examiner questions are verifiers, not justifiers. If Mark demonstrates deeper understanding in Q&A than in his initial presentation, that should RAISE the relevant scores. Score based on the TOTAL picture of what the examiner heard across all phases.${jsonReminder}`;
     }
 
-    if (ctx.includes("examiner q&a") || ctx.includes("written ma") || ctx.includes("free write")) {
+    if (isWrittenMA) {
       // Written MA — single audience (examiner), written analysis + dialog
       const parts = transcript.split(/---\s*EXAMINER Q&A\s*---/);
       const analysis = (parts[0] || "").trim();
@@ -1401,7 +1433,13 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
       return `SCORE THIS WRITTEN MA WITH EXAMINER Q&A — single audience (examiner only, no peer delivery):\n\nWRITTEN ANALYSIS:\n${analysis}\n\nEXAMINER Q&A:\n${dialog}\n\nContext: ${who}, ${activity}\n\nThis is a written MA followed by examiner dialog. There is no peer delivery — score Communication based on clarity and technical depth of the written analysis and examiner responses only.${jsonReminder}`;
     }
 
-    // Default — basic MA observation/analysis (scenario drill, video analysis, manual entry, etc.)
+    // Default — check if there's actually dialog content we should use
+    if (hasPeerDialog || hasPresentation || hasPrescription) {
+      // Has dialog-like content but wasn't detected as AT exam — score what's there
+      return `SCORE THIS MA SESSION — it contains dialog and/or presentation elements:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nScore based on ALL content present including any peer dialog, prescription delivery, and examiner presentation.${jsonReminder}`;
+    }
+
+    // True default — basic MA observation/analysis
     return `SCORE THIS MA OBSERVATION/ANALYSIS — this is a practice session without peer dialog or examiner Q&A:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nThis is a practice MA without a live peer dialog. Score based on the quality of the observation, analysis, and any prescription provided in the text. Communication is scored on clarity and organization of the written analysis only.${jsonReminder}`;
   };
 

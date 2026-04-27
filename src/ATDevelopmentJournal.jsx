@@ -1455,6 +1455,68 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     return `SCORE THIS MA OBSERVATION/ANALYSIS — this is a practice session without peer dialog or examiner Q&A:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nThis is a practice MA without a live peer dialog. Score based on the quality of the observation, analysis, and any prescription provided in the text. Communication is scored on clarity and organization of the written analysis only.${jsonReminder}`;
   };
 
+  // Lean prompt for scoring — only includes what the scorer needs
+  const buildScorerPrompt = (baseSystem) => {
+    let prompt = baseSystem;
+
+    // Layer 1 ONLY: Mentor assessments for calibration (ground truth)
+    const assessmentEntries = Object.entries(mentorAssessments).filter(([, v]) => v?.whatsWorking || v?.consistentGaps || v?.progress);
+    if (assessmentEntries.length > 0) {
+      prompt += "\n\n=== MENTOR DEVELOPMENT ASSESSMENTS (GROUND TRUTH) ===\nCalibrate your scores against these:\n";
+      assessmentEntries.forEach(([key, a]) => {
+        const name = USERS[key]?.name || key;
+        prompt += `\n${name}'s Assessment:`;
+        if (a.whatsWorking) prompt += `\n  What's working: ${a.whatsWorking}`;
+        if (a.consistentGaps) prompt += `\n  Consistent gaps: ${a.consistentGaps}`;
+        if (a.progress) prompt += `\n  Progress noticed: ${a.progress}`;
+      });
+    }
+
+    // Filtered reference materials — only sections relevant to MA scoring
+    if (referenceMaterials.trim()) {
+      const sections = referenceMaterials.split(/═══\s*/);
+      const keepPatterns = [
+        /ASSESSMENT SCALE/i,
+        /AT MA.*SCORECARD/i,
+        /AT MA.*ASSESSMENT FLOW/i,
+        /ALPINE SKIING FUNDAMENTALS/i,
+        /IDP ASSESSMENT/i,
+        /PROFESSIONALISM/i,
+        /L3 MA.*SCORECARD/i,
+        /L3 vs AT/i,
+        /PHYSICS.*BIOMECHANICS/i,
+        /SUPPLEMENTARY/i,
+      ];
+      const filteredSections = sections.filter(section => {
+        const firstLine = section.split("\n")[0].trim();
+        return keepPatterns.some(pattern => pattern.test(firstLine));
+      });
+      if (filteredSections.length > 0) {
+        prompt += "\n\n=== REFERENCE MATERIALS (SCORING RELEVANT) ===\n";
+        prompt += filteredSections.map(s => "═══ " + s).join("\n");
+      }
+    }
+
+    // Layer 5 condensed: Only recent MA scores for trend comparison (no full transcripts)
+    const recentMA = [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 4);
+    const scoredSessions = recentMA.filter(s => {
+      const p = parseSummary(s.summary);
+      return p?.scores;
+    });
+    if (scoredSessions.length > 0) {
+      prompt += "\n\n=== RECENT MA SCORES (for trend comparison) ===\n";
+      scoredSessions.forEach(s => {
+        const p = parseSummary(s.summary);
+        prompt += `[${s.date} · ${s.context}] D=${p.scores.describe} C/E=${p.scores.cause_effect} E=${p.scores.evaluate} P=${p.scores.prescription} B=${p.scores.biomechanics} Co=${p.scores.communication}`;
+        if (p.key_learning) prompt += ` · Focus: ${p.key_learning}`;
+        prompt += "\n";
+      });
+    }
+
+    console.log("Scorer prompt:", prompt.length, "chars vs full buildSystemPrompt would be ~65000+");
+    return prompt;
+  };
+
   const saveVideos = (vids) => {
     setVideos(vids);
     apiUpdate("JournalEntries", { id: "_VIDEOS", data: JSON.stringify(vids) });
@@ -2289,7 +2351,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                       if (!s.transcript?.trim()) return;
                       setAnalyzingMA(s.id);
                       const input = `MY MA:\n${s.transcript}\n\n${s.notes ? `MENTOR FEEDBACK:\n${s.notes}` : ""}\n\nContext: ${s.context || ""}, Analyzing: ${s.who || ""}, Activity: ${s.activity || ""}`;
-                      const resp = await callClaude([{ role: "user", content: input }], MA_ANALYZER_SYSTEM);
+                      const resp = await callClaude([{ role: "user", content: input }], buildScorerPrompt(MA_ANALYZER_SYSTEM));
                       const parsed = parseAIJson(resp);
                       const updated = maSessions.map(x => x.id === s.id ? { ...x, summary: JSON.stringify(parsed) } : x);
                       saveMaSessions(updated);
@@ -3053,7 +3115,7 @@ PROGRESS I'VE NOTICED:
                               setRescoringId(s.id);
                               try {
                                 const input = buildScoreInput(s);
-                                const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                                const resp = await callClaude([{ role: "user", content: input }], buildScorerPrompt(MA_TREND_SCORER_SYSTEM));
                                 console.log("Rescore response:", resp?.slice(0, 300));
                                 const parsed = parseAIJson(resp);
                                 console.log("Rescore parsed:", parsed?.scores);
@@ -3084,7 +3146,7 @@ PROGRESS I'VE NOTICED:
                             setRescoringId(s.id);
                             try {
                               const input = buildScoreInput(s);
-                              const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                              const resp = await callClaude([{ role: "user", content: input }], buildScorerPrompt(MA_TREND_SCORER_SYSTEM));
                               console.log("Score response:", resp?.slice(0, 300));
                               const parsed = parseAIJson(resp);
                               if (parsed?.scores) {
@@ -3147,7 +3209,7 @@ PROGRESS I'VE NOTICED:
                                 setRescoringId(s.id);
                                 try {
                                   const input = buildScoreInput(s);
-                                  const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                                  const resp = await callClaude([{ role: "user", content: input }], buildScorerPrompt(MA_TREND_SCORER_SYSTEM));
                                   const parsed = parseAIJson(resp);
                                   if (parsed?.scores) {
                                     const cleanSummary = { ...parsed, scoredAt: new Date().toISOString() };
@@ -3642,7 +3704,7 @@ PROGRESS I'VE NOTICED:
                           }
 
                           const input = `INITIAL MA:\n${writtenMA.transcript}\n\nEXAMINER DIALOG:\n${dialogText}${pastContext}\n\nContext: ${writtenMA.who || ""}, ${writtenMA.activity || ""}, ${writtenMA.conditions || ""}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
-                          const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                          const resp = await callClaude([{ role: "user", content: input }], buildScorerPrompt(MA_TREND_SCORER_SYSTEM));
                           const parsed = parseAIJson(resp);
                           setWrittenMAResult(parsed);
                           setWrittenMAPhase("scored");
@@ -4027,7 +4089,7 @@ PROGRESS I'VE NOTICED:
                           }
                           const prescribeText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
                           const input = `SCORE ONLY WHAT THE EXAMINER HEARD:\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescribeText}\n\nMARK'S PRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nScore ONLY what the examiner heard. Do NOT consider any private notes. Evaluate: (1) Did he connect the task to the subject's intent when delivering it? (2) Did he explain the technical WHY to the examiner?\n"did_well": ["list of specific things Mark did well"]\n"opportunity": ["list of specific areas to improve"]\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
-                          const resp = await callClaude([{ role: "user", content: input }], buildSystemPrompt(MA_TREND_SCORER_SYSTEM));
+                          const resp = await callClaude([{ role: "user", content: input }], buildScorerPrompt(MA_TREND_SCORER_SYSTEM));
                           const parsed = parseAIJson(resp);
 
                           // Add to attempts

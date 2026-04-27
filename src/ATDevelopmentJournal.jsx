@@ -453,22 +453,53 @@ Score ONLY what the examiner heard — the peer dialog, prescription delivery to
 
 FITTS & POSNER SCALE (this is how Chris scores):
 1 = Cognitive Low — candidate is guessing, no framework, can't articulate what they see
-2 = Cognitive High — understands concepts but can't apply them consistently, surface-level connections
-3 = Associative Low — L3-level thinking. Sees some skill interactions, connects A→B, but doesn't see the whole picture. Doesn't prioritize. Describes the turn as one event. This is where most L3 instructors sit.
-4 = Associative High (PASS) — AT-level. Sees the whole picture, prioritizes the primary fundamental, traces multi-skill cascade to a specific root cause by phase. Connects prescription to subject's intent. Explains the technical WHY. Adapts to conditions. Verifies through dialog. This is the standard.
+2 = Cognitive High — understands concepts, uses correct terminology, but application is surface-level. Attempts the work but misses key elements or lacks specificity.
+3 = Associative Low — L3-level competence. Does the work: describes by phase, sees skill interactions, connects cause to effect (A→B or A→B→C), chooses appropriate IDP tasks, uses correct terminology, checks intent. This is SOLID instructor-level work. Most L3 instructors sit here.
+4 = Associative High (PASS) — AT-level. Everything a 3 does PLUS: prioritizes the PRIMARY fundamental driving the cascade, uses DIRT for precision, applies the diagnostic framework (skill vs accuracy vs conditions vs tactical), explains physics (sidecut, forces, three-joint constraint), distinguishes inside/outside ski behavior, communicates to TWO audiences, adapts to conditions. This is the standard.
 5 = Autonomous Low — Consistently above AT standard. Analysis is fluid, precise, adapted. Communication to both audiences is natural.
 6 = Autonomous High — Mastery. Examiner-level depth and precision on every criterion.
+
+CRITICAL SCORING GUIDANCE:
+The advanced criteria (DIRT, diagnostic framework, inside/outside ski independence, sidecut physics, Z-shaped patterns, conditions adaptation) define what separates a 3 from a 4 — NOT what separates a 2 from a 3.
+- If Mark describes by phase, identifies multiple skill interactions, chooses an appropriate task, connects to intent, and uses correct terminology — that is a 3 even if he doesn't use DIRT explicitly or explain sidecut physics.
+- If Mark does all of the above AND adds DIRT precision, prioritizes the primary fundamental, explains the physics, distinguishes inside/outside ski — that is a 4.
+- A 2 means the essential elements are only beginning to appear — the candidate is attempting but fundamentally missing key components (no phase specificity, single-skill thinking, no cause-effect, vague or missing prescription).
+Do NOT score a 2 just because AT-level depth is missing. Score a 2 only when L3-level competence is missing.
 
 CALIBRATE AGAINST CHRIS'S KNOWN ASSESSMENT:
 If mentor development assessments are provided, use them as your calibration. If Chris says Mark's cause-effect "lacks specific timing, phase and impacted ski performance," then don't give a 4 on cause/effect unless Mark actually addresses timing, phase, AND ski performance impact in THIS session. If Chris says Mark "jumps to prescription without verifying," don't give a 4 on prescription unless Mark actually verified through dialog first. The mentor assessment is the ground truth — your scores should reflect whether Mark has addressed what Chris is pushing on.
 
-SCORE THESE CRITERIA (against the whole interaction):
-- Describe: Did Mark describe by turn phase? Both ski AND body performance? Specific about which leg, joint, timing? Did he use DIRT (duration, intensity, rate, timing) to add precision? Did he distinguish inside vs outside ski behavior?
-- Cause/Effect: Did Mark see the whole picture, prioritize the primary fundamental, then trace a multi-skill cascade? Did he identify Z-shaped patterns (cause in one phase, effect in another)? Did he connect edging-pressure interactions and the three-joint constraint? Or just connect A to B?
-- Evaluate: Did Mark check task compliance? Compare intended vs observed using speed, turn shape, turn size, line, ski-snow interaction? Did he use the diagnostic framework — is the issue a skill deficiency, accuracy of use (wrong DIRT), condition mismatch, or tactical upgrade? Did he consider how snow, condition, pitch, and speed interact?
-- Prescription: Did Mark choose an appropriate IDP task with variations? Connect it to the subject's intent when delivering? Explain the technical WHY to the examiner using physics — sidecut engagement, forces, edging-rotary spectrum, three-joint constraint? Adapt to conditions?
-- Biomechanics/Physics: Did Mark explain WHY using physics concepts — sidecut engagement and reverse camber, edging-rotary spectrum, pressure as centripetal force, fore/aft through the arc, upper/lower body separation (65/35), inside/outside ski independence, inclination vs angulation? A 3 names the skill. A 4 explains the physics of WHY it matters.
-- Communication: Two audiences — did Mark help the peer see relevance to their focus? Did Mark demonstrate technical depth to the examiner organized by phase with DIRT precision?
+SCORE THESE CRITERIA — what each level looks like:
+
+Describe:
+- 2: Vague description, no phase specificity, doesn't separate ski from body performance
+- 3: Describes by phase, separates ski and body performance, specifies which leg/joint
+- 4: All of 3 PLUS uses DIRT for precision, distinguishes inside vs outside ski behavior, describes what the ski does on the snow as a result of body movements
+
+Cause/Effect:
+- 2: Identifies a single skill issue without connecting to others
+- 3: Connects multiple fundamentals in a cause-effect chain (A→B→C), sees skill interactions
+- 4: All of 3 PLUS prioritizes the PRIMARY fundamental driving the cascade, identifies Z-shaped patterns across phases, connects through three-joint constraint and edging-pressure interactions
+
+Evaluate:
+- 2: General comparison without specifics
+- 3: Checks task compliance, compares intended vs observed performance, verifies through dialog
+- 4: All of 3 PLUS compares using speed/turn shape/size/line/ski-snow interaction, applies diagnostic framework (skill deficiency vs accuracy of use vs condition mismatch vs tactical upgrade), considers how conditions interact
+
+Prescription:
+- 2: Suggests a general change without specific task or rationale
+- 3: Chooses appropriate IDP task, connects to root cause, explains why to examiner
+- 4: All of 3 PLUS includes variations, adapts to conditions, connects to subject's intent when DELIVERING to peer, explains technical WHY using physics (sidecut, forces, edging-rotary spectrum)
+
+Biomechanics/Physics:
+- 2: Uses correct terminology without explanation ("grip," "edge angles," "counter")
+- 3: Names the skills and their interactions, describes what happens mechanically
+- 4: All of 3 PLUS explains WHY at the physics level — sidecut engagement, reverse camber, centripetal forces, three-joint constraint, 65/35 separation, inclination vs angulation
+
+Communication:
+- 2: Delivers information but disorganized or single-audience
+- 3: Organized presentation, connects to subject's focus, clear to examiner
+- 4: All of 3 PLUS distinct two-audience delivery (peer: connected to intent / examiner: organized by phase with DIRT precision), clean efficient AT communication style
 
 HOW TO SCORE THE EXAMINER Q&A:
 Examiner questions are NOT inherently negative — they serve multiple purposes:

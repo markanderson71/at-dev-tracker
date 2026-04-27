@@ -1472,8 +1472,22 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
       return `SCORE THIS MA SESSION — it contains dialog and/or presentation elements:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nScore based on ALL content present including any peer dialog, prescription delivery, and examiner presentation.${jsonReminder}`;
     }
 
+    // Chat-based practice modes (Scenario Drill, Reverse MA, Compare & Contrast, Video Analysis)
+    // Score like talking to an examiner — single audience, evaluating the analysis dialog
+    const modeLabels = {
+      scenario: "Scenario Drill — Mark analyzed an AI-generated scenario",
+      reverse: "Reverse MA — Mark worked backward from a prescription to diagnosis",
+      compare: "Compare & Contrast — Mark analyzed two skiers with similar symptoms but different root causes",
+      video: "Video Analysis — Mark analyzed skiing from a video",
+    };
+    const modeKey = (ctx.includes("scenario") ? "scenario" : ctx.includes("reverse") ? "reverse" : ctx.includes("compare") ? "compare" : ctx.includes("video") ? "video" : null);
+    
+    if (modeKey) {
+      return `SCORE THIS ${modeLabels[modeKey].toUpperCase()}:\n\nThis is a practice conversation where Mark is analyzed as if presenting to an examiner. Score the quality of Mark's analysis, observations, cause-effect reasoning, and any prescriptions within the dialog. Mark's messages are labeled "Mark:" and the AI coach responses are labeled "AI:".\n\n${transcript}\n\nContext: ${who || modeLabels[modeKey]}, ${activity}\n\nSCORING NOTES:\n- Single audience — score as if Mark is presenting to an examiner\n- The AI coach may have pushed Mark deeper — evaluate Mark's responses including prompted depth\n- Score Communication based on clarity and technical depth of Mark's contributions\n- Evidence for scoring comes from Mark's messages, not the AI's${jsonReminder}`;
+    }
+
     // True default — basic MA observation/analysis
-    return `SCORE THIS MA OBSERVATION/ANALYSIS — this is a practice session without peer dialog or examiner Q&A:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nThis is a practice MA without a live peer dialog. Score based on the quality of the observation, analysis, and any prescription provided in the text. Communication is scored on clarity and organization of the written analysis only.${jsonReminder}`;
+    return `SCORE THIS MA SESSION:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nScore based on the quality of the observation, analysis, and any prescription provided. Score Communication based on clarity and organization.${jsonReminder}`;
   };
 
   // Lean prompt for scoring — only includes what the scorer needs
@@ -3342,6 +3356,17 @@ PROGRESS I'VE NOTICED:
                       el.value = "";
                     }} style={{ padding: "6px 12px", borderRadius: 5, fontSize: 12, fontWeight: 700, background: `${currentUser.color}12`, border: `1px solid ${currentUser.color}30`, color: currentUser.color, cursor: "pointer", flexShrink: 0 }}>Post</button>
                   </div>
+
+                  {/* Delete session */}
+                  <div style={{ marginTop: 8, textAlign: "right" }}>
+                    <button onClick={() => {
+                      if (confirm("Delete this MA session? This cannot be undone.")) {
+                        saveMaSessions(maSessions.filter(x => x.id !== s.id));
+                      }
+                    }} style={{
+                      background: "none", border: "none", color: "#3a5068", fontSize: 10, cursor: "pointer",
+                    }}>Delete session</button>
+                  </div>
                 </Card>
               );
             })}
@@ -4423,11 +4448,28 @@ PROGRESS I'VE NOTICED:
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
                 <div style={{ fontSize: 10, color: "#3a5068" }}>Ctrl+Enter to send</div>
-                {sparringMessages.length > 0 && (
-                  <button onClick={() => setSparringMessages([])} style={{
-                    background: "none", border: "none", color: "#3a5068", fontSize: 10, cursor: "pointer",
-                  }}>Clear conversation</button>
-                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  {sparringMessages.length > 2 && ["scenario", "reverse", "compare", "video"].includes(sparringMode) && (
+                    <button onClick={() => {
+                      const modeLabels = { scenario: "Scenario Drill", reverse: "Reverse MA", compare: "Compare & Contrast", video: "Video Analysis" };
+                      const transcript = sparringMessages.map(m => `${m.role === "user" ? "Mark" : "AI"}: ${m.content}`).join("\n\n");
+                      const newSession = {
+                        id: uid(), date: today(), context: modeLabels[sparringMode],
+                        who: "", activity: sparringMode, conditions: "",
+                        transcript, notes: "", summary: "", mentorFeedback: [],
+                      };
+                      saveMaSessions([newSession, ...maSessions]);
+                      setSparringMessages([]);
+                    }} style={{
+                      background: "none", border: "none", color: "#28a858", fontSize: 10, cursor: "pointer", fontWeight: 600,
+                    }}>Save to MA History</button>
+                  )}
+                  {sparringMessages.length > 0 && (
+                    <button onClick={() => setSparringMessages([])} style={{
+                      background: "none", border: "none", color: "#3a5068", fontSize: 10, cursor: "pointer",
+                    }}>Clear conversation</button>
+                  )}
+                </div>
               </div>
               </>
               )}

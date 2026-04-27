@@ -126,15 +126,18 @@ function getApiUrl() {
 }
 
 async function apiGet(sheetName) {
-  const url = getApiUrl();
-  if (!url) return [];
   try {
-    const res = await fetch(url, {
+    const res = await fetch("/api/sheet", {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ _action: "getAll", _sheet: sheetName }),
     });
-    const data = await res.json();
+    const wrapper = await res.json();
+    // The sheet proxy wraps the response: { ok: true, response: "..." }
+    let data = wrapper;
+    if (wrapper.response) {
+      try { data = JSON.parse(wrapper.response); } catch(e) { data = wrapper.response; }
+    }
     console.log("API response for", sheetName, ":", typeof data, Array.isArray(data), data?.rows ? data.rows.length + " rows" : "no rows key");
     if (Array.isArray(data)) return data;
     if (data?.rows && Array.isArray(data.rows)) return data.rows;
@@ -145,20 +148,18 @@ async function apiGet(sheetName) {
 }
 
 async function apiPost(action, sheetName, rowData) {
-  const url = getApiUrl();
-  if (!url) return false;
   try {
     const payload = { ...rowData, _action: action, _sheet: sheetName };
     console.log("API POST:", action, "id:", rowData?.id, "keys:", Object.keys(rowData || {}));
-    const res = await fetch(url, {
+    const res = await fetch("/api/sheet", {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const text = await res.text();
-    console.log("API response:", action, text.slice(0, 200));
-    if (!res.ok || text.includes("error") || text.includes("quota")) {
-      console.error("API save failed:", text);
+    const data = await res.json();
+    console.log("API response:", action, res.status, JSON.stringify(data).slice(0, 300));
+    if (!res.ok || data.error) {
+      console.error("API save failed:", data.error || res.status);
       return false;
     }
     return true;

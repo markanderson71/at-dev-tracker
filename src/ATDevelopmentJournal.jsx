@@ -146,7 +146,7 @@ async function apiGet(sheetName) {
 
 async function apiPost(action, sheetName, rowData) {
   const url = getApiUrl();
-  if (!url) return;
+  if (!url) return false;
   try {
     const payload = { ...rowData, _action: action, _sheet: sheetName };
     console.log("API POST:", action, "id:", rowData?.id, "keys:", Object.keys(rowData || {}));
@@ -157,7 +157,15 @@ async function apiPost(action, sheetName, rowData) {
     });
     const text = await res.text();
     console.log("API response:", action, text.slice(0, 200));
-  } catch (e) { console.error(`API ${action} error:`, e); }
+    if (!res.ok || text.includes("error") || text.includes("quota")) {
+      console.error("API save failed:", text);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error(`API ${action} error:`, e);
+    return false;
+  }
 }
 
 function apiCreate(s, d) { return apiPost("create", s, d); }
@@ -608,13 +616,11 @@ const SPARRING_MODES = {
 
 async function callClaude(messages, systemOverride) {
   try {
-    const url = getApiUrl();
-    if (!url) return "API not configured.";
-    const res = await fetch(url, {
+    // Use Vercel serverless function — bypasses Apps Script bandwidth quota
+    const res = await fetch("/api/claude", {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        _action: "claude",
         model: "claude-sonnet-4-6",
         max_tokens: 4000,
         system: systemOverride || AT_COACH_SYSTEM,
@@ -622,8 +628,11 @@ async function callClaude(messages, systemOverride) {
       }),
     });
     const data = await res.json();
-    if (data.error) return "Error: " + data.error;
-    return data.content?.map(c => c.text || "").join("\n") || data.text || "No response.";
+    if (data.error) {
+      console.error("Claude API error:", data.error);
+      return "Error: " + data.error;
+    }
+    return data.text || "No response.";
   } catch (e) {
     console.error("Claude API error:", e);
     return "Unable to connect to the sparring partner right now.";
@@ -1231,6 +1240,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   const [aiAssessmentLoading, setAiAssessmentLoading] = useState(false);
   const [aiAssessmentResult, setAiAssessmentResult] = useState(null);
   const [rescoringId, setRescoringId] = useState(null);
+  const [saveError, setSaveError] = useState(null);
   const [challengeLoading, setChallengeLoading] = useState(false);
   const [challengeResponse, setChallengeResponse] = useState(null);
   const [analyzingMA, setAnalyzingMA] = useState(null); // session id being analyzed
@@ -1402,9 +1412,15 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     }, 2000);
   };
 
-  const saveMaSessions = (sessions) => {
+  const saveMaSessions = async (sessions) => {
     setMaSessions(sessions);
-    apiUpdate("JournalEntries", { id: "_MA_SESSIONS", data: JSON.stringify(sessions) });
+    const ok = await apiUpdate("JournalEntries", { id: "_MA_SESSIONS", data: JSON.stringify(sessions) });
+    if (!ok) {
+      setSaveError("MA sessions failed to save — data is in memory but NOT persisted. Don't refresh until the save succeeds.");
+      console.error("MA sessions save failed — data in memory only");
+    } else {
+      setSaveError(null);
+    }
   };
 
   const buildScoreInput = (session) => {
@@ -1806,6 +1822,16 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
           </div>
 
           {/* Tabs */}
+          {saveError && (
+            <div style={{ margin: "8px 0 0", padding: "8px 12px", borderRadius: 6, background: "rgba(224,80,40,0.12)", border: "1px solid rgba(224,80,40,0.3)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ fontSize: 12, color: "#e05028", fontWeight: 600 }}>{saveError}</div>
+              <button onClick={async () => {
+                const ok = await apiUpdate("JournalEntries", { id: "_MA_SESSIONS", data: JSON.stringify(maSessions) });
+                if (ok) setSaveError(null);
+                else alert("Save still failing — check your connection or wait for quota to reset.");
+              }} style={{ padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: "rgba(224,80,40,0.1)", border: "1px solid rgba(224,80,40,0.3)", color: "#e05028", flexShrink: 0 }}>Retry Save</button>
+            </div>
+          )}
           {!isSubView && (
             <div style={{ display: "flex", gap: 4, marginTop: 10, flexWrap: "wrap" }}>
               {[

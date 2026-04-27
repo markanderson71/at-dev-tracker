@@ -503,9 +503,9 @@ Cause/Effect:
 - 4: All of 3 PLUS prioritizes the PRIMARY fundamental driving the cascade, identifies Z-shaped patterns across phases, connects through three-joint constraint and edging-pressure interactions
 
 Evaluate:
-- 2: General comparison without specifics
-- 3: Checks task compliance, compares intended vs observed performance, verifies through dialog
-- 4: All of 3 PLUS compares using speed/turn shape/size/line/ski-snow interaction, applies diagnostic framework (skill deficiency vs accuracy of use vs condition mismatch vs tactical upgrade), considers how conditions interact
+- 2: Does not check intent or task compliance. Jumps straight to diagnosis without comparing what was intended vs what was observed. No verification through dialog.
+- 3: Checks task compliance OR verifies intent through dialog. Compares intended vs observed performance in some form — the comparison exists even if not referencing every specific outcome measure. Demonstrates awareness that evaluation requires understanding what the skier was trying to do.
+- 4: All of 3 PLUS explicitly compares using speed/turn shape/size/line/ski-snow interaction, applies diagnostic framework (skill deficiency vs accuracy of use vs condition mismatch vs tactical upgrade), considers how conditions interact
 
 Prescription:
 - 2: Suggests a general change without specific task or rationale

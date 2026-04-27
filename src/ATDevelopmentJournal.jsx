@@ -558,13 +558,17 @@ HOW TO RESPOND:
 - Sometimes state a focus that's DIFFERENT from what Mark identified — this tests whether he can connect his observation to your intent rather than overriding it: "I've been really focused on my steering" (when Mark saw an edging issue). A good AT response connects the two; a weak one tells you to forget steering and work on edging instead.
 - If Mark asks about a specific fundamental, give your honest self-assessment — you might be wrong about what you're doing
 - Keep answers to 2-4 sentences — you're an instructor, not giving a lecture
-- Reference your cert level and experience naturally: "As an L2, I haven't really focused on edge timing much"
+- Reference your cert level and experience naturally. In AT exam context, you are ALWAYS L3 certified or above — you understand terminology, have teaching experience, and can discuss technique. Your self-awareness and precision vary by level:
+  - Weak L3: understands basics but struggles to articulate what they feel vs what's happening. Self-assessment may be inaccurate.
+  - Solid L3: good self-awareness, can describe what they feel, may not connect it to specific fundamentals
+  - Strong L3: articulate about their skiing, connects to fundamentals, approaching AT-level self-analysis
+  - Advanced AT candidate: highly self-aware, uses precise terminology, may challenge Mark's analysis constructively
 
 ABOUT YOUR SKIING (use context from the scenario):
-- You have strengths and weaknesses typical of your cert level
-- You may not fully understand WHY something is happening in your skiing
+- You have strengths and weaknesses — but as an L3+ instructor you have a baseline of competence
+- You may not fully understand WHY something is happening in your skiing, but you can describe what you feel
 - You have opinions about what works for you that might not be technically accurate
-- You're open to feedback but want to understand the reasoning
+- You're open to feedback but as a peer (not a student) you expect to understand the reasoning
 
 If Mark says something doesn't make sense or pushes back on your answer, acknowledge it naturally: "Yeah, that's fair — maybe I was feeling something different from what was actually happening" and adjust. Mark is right to question you.`;
 
@@ -1221,7 +1225,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   const [sparringLoading, setSparringLoading] = useState(false);
   const [sparringMode, setSparringMode] = useState("open");
   // Written MA (free practice)
-  const [writtenMA, setWrittenMA] = useState({ who: "", activity: "", conditions: "", transcript: "", videoUrl: "" });
+  const [writtenMA, setWrittenMA] = useState({ who: "", activity: "", conditions: "", transcript: "", videoUrl: "", videoSkier: "", videoTime: "" });
   const [writtenMAResult, setWrittenMAResult] = useState(null);
   const [writtenMAScenario, setWrittenMAScenario] = useState(null);
   const [writtenMADialog, setWrittenMADialog] = useState([]);
@@ -1229,7 +1233,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   const [writtenMALoading, setWrittenMALoading] = useState(false);
   // AT MA Exam simulation
   const [examMA, setExamMA] = useState({
-    phase: "setup", videoUrl: "", who: "", activity: "", conditions: "",
+    phase: "setup", videoUrl: "", videoSkier: "", videoTime: "", who: "", activity: "", conditions: "",
     observations: "", rootCause: "",
     dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [],
     presentation: "",
@@ -3126,6 +3130,15 @@ PROGRESS I'VE NOTICED:
                       <div style={{ fontSize: 15, fontWeight: 600, color: "#d0d8e0" }}>
                         {s.activity || "MA Session"}{s.who ? ` — analyzing ${s.who}` : ""}
                       </div>
+                      {(s.context || "").toLowerCase().includes("at ma exam") && s.who && (() => {
+                        const w = (s.who || "").toLowerCase();
+                        const behavior = w.includes("weak") ? "May struggle to articulate, self-assessment may be inaccurate"
+                          : w.includes("solid") ? "Good self-awareness, describes what they feel, may not connect to fundamentals"
+                          : w.includes("strong") ? "Articulate, connects to fundamentals, approaching AT-level self-analysis"
+                          : w.includes("advanced") ? "Highly self-aware, precise terminology, may challenge analysis"
+                          : null;
+                        return behavior ? <div style={{ fontSize: 10, color: "#4d6888", marginTop: 2, fontStyle: "italic" }}>Peer behavior: {behavior}</div> : null;
+                      })()}
                     </div>
                     {aiScores?.scores ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -3202,8 +3215,23 @@ PROGRESS I'VE NOTICED:
                     <summary style={{ fontSize: 12, color: "#c060a0", cursor: "pointer", fontWeight: 600 }}>Mark's MA analysis</summary>
                     <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(255,255,255,0.02)", fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap", marginTop: 4 }}>{s.transcript || "No transcript"}</div>
                     {s.notes && (
-                      <div style={{ padding: "6px 10px", borderRadius: 6, background: "rgba(224,120,48,0.04)", border: "1px solid rgba(224,120,48,0.1)", fontSize: 12, color: "#d0d8e0", lineHeight: 1.5, whiteSpace: "pre-wrap", marginTop: 4 }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>NOTES: </span>{s.notes}
+                      <div style={{ padding: "6px 10px", borderRadius: 6, background: "rgba(224,120,48,0.04)", border: "1px solid rgba(224,120,48,0.1)", fontSize: 12, color: "#d0d8e0", lineHeight: 1.5, marginTop: 4 }}>
+                        {(() => {
+                          const notes = s.notes || "";
+                          const videoMatch = notes.match(/Video:\s*(https?:\/\/\S+)/);
+                          const skierMatch = notes.match(/Skier:\s*([^|]+)/);
+                          const timeMatch = notes.match(/Time:\s*([^|]+)/);
+                          if (videoMatch) {
+                            return (
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                                <a href={videoMatch[1].trim()} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 4, background: "rgba(48,136,204,0.08)", color: "#3088cc", fontSize: 11, textDecoration: "none" }}>▶ Video</a>
+                                {skierMatch && <span style={{ fontSize: 11, color: "#7a9ab5" }}>Skier: {skierMatch[1].trim()}</span>}
+                                {timeMatch && <span style={{ fontSize: 11, color: "#7a9ab5" }}>Time: {timeMatch[1].trim()}</span>}
+                              </div>
+                            );
+                          }
+                          return <div><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>NOTES: </span>{notes}</div>;
+                        })()}
                       </div>
                     )}
                   </details>
@@ -3460,8 +3488,8 @@ PROGRESS I'VE NOTICED:
                     setWrittenMAResult(null);
                     setWrittenMADialog([]);
                     setWrittenMAPhase("setup");
-                    setWrittenMA({ who: "", activity: "", conditions: "", transcript: "", videoUrl: "" });
-                    setExamMA({ phase: "setup", videoUrl: "", who: "", activity: "", conditions: "", observations: "", rootCause: "", dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [], presentation: "", debriefMessages: [], result: null, attempts: [], attemptNumber: 1 });
+                    setWrittenMA({ who: "", activity: "", conditions: "", transcript: "", videoUrl: "", videoSkier: "", videoTime: "" });
+                    setExamMA({ phase: "setup", videoUrl: "", videoSkier: "", videoTime: "", who: "", activity: "", conditions: "", observations: "", rootCause: "", dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [], presentation: "", debriefMessages: [], result: null, attempts: [], attemptNumber: 1 });
                   }
                 }} style={{
                   padding: "6px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
@@ -3585,6 +3613,13 @@ PROGRESS I'VE NOTICED:
                           <a href={writtenMA.videoUrl} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", marginBottom: 10, borderRadius: 6, background: "rgba(48,136,204,0.06)", border: "1px solid rgba(48,136,204,0.15)", color: "#3088cc", fontSize: 13, textDecoration: "none" }}>▶ Open video</a>
                         ) : null;
                       })()}
+
+                      {writtenMA.videoUrl && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                          <div><label style={lbl}>Skier description</label><input value={writtenMA.videoSkier || ""} onChange={ev => setWrittenMA(p => ({ ...p, videoSkier: ev.target.value }))} placeholder="e.g., Red jacket, second skier" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
+                          <div><label style={lbl}>Video time</label><input value={writtenMA.videoTime || ""} onChange={ev => setWrittenMA(p => ({ ...p, videoTime: ev.target.value }))} placeholder="e.g., 0:32 - 1:15" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
+                        </div>
+                      )}
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
                         <div><label style={lbl}>Who</label><input value={writtenMA.who} onChange={ev => setWrittenMA(p => ({ ...p, who: ev.target.value }))} placeholder="e.g., L2 candidate" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
@@ -3742,7 +3777,7 @@ PROGRESS I'VE NOTICED:
                             context: writtenMAScenario ? "AI scenario + examiner Q&A" : "Free write + examiner Q&A",
                             who: writtenMA.who, activity: writtenMA.activity,
                             transcript: writtenMA.transcript + "\n\n--- EXAMINER Q&A ---\n" + dialogText,
-                            notes: writtenMA.videoUrl ? `Video: ${writtenMA.videoUrl}` : "",
+                            notes: writtenMA.videoUrl ? `Video: ${writtenMA.videoUrl}${writtenMA.videoSkier ? ` | Skier: ${writtenMA.videoSkier}` : ""}${writtenMA.videoTime ? ` | Time: ${writtenMA.videoTime}` : ""}` : "",
                             summary: typeof parsed === "object" ? JSON.stringify(parsed) : parsed,
                           };
                           saveMaSessions([newSession, ...maSessions]);
@@ -3793,7 +3828,7 @@ PROGRESS I'VE NOTICED:
                           setWrittenMAScenario(null);
                           setWrittenMAResult(null);
                           setWrittenMADialog([]);
-                          setWrittenMA({ who: "", activity: "", conditions: "", transcript: "", videoUrl: "" });
+                          setWrittenMA({ who: "", activity: "", conditions: "", transcript: "", videoUrl: "", videoSkier: "", videoTime: "" });
                         }} style={{
                           marginTop: 10, width: "100%", padding: "10px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer",
                           background: "rgba(160,160,208,0.08)", border: "1px solid rgba(160,160,208,0.2)", color: "#a0a0d0",
@@ -3812,9 +3847,23 @@ PROGRESS I'VE NOTICED:
                         <label style={lbl}>Video link</label>
                         <input value={examMA.videoUrl} onChange={ev => setExamMA(p => ({ ...p, videoUrl: ev.target.value }))} placeholder="YouTube or Google Drive link to the skiing you'll analyze" style={{ ...inp, fontSize: 13 }} />
                       </div>
+                      {examMA.videoUrl && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                          <div><label style={lbl}>Skier description</label><input value={examMA.videoSkier || ""} onChange={ev => setExamMA(p => ({ ...p, videoSkier: ev.target.value }))} placeholder="e.g., Red jacket, second skier" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
+                          <div><label style={lbl}>Video time</label><input value={examMA.videoTime || ""} onChange={ev => setExamMA(p => ({ ...p, videoTime: ev.target.value }))} placeholder="e.g., 0:32 - 1:15" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
+                        </div>
+                      )}
                       {(() => { const yt = (examMA.videoUrl || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/); return yt ? <a href={examMA.videoUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginBottom: 8 }}><img src={`https://img.youtube.com/vi/${yt[1]}/mqdefault.jpg`} alt="" style={{ width: "100%", maxWidth: 320, borderRadius: 8 }} /></a> : null; })()}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
-                        <div><label style={lbl}>Who</label><input value={examMA.who} onChange={ev => setExamMA(p => ({ ...p, who: ev.target.value }))} placeholder="e.g., L2 instructor" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
+                        <div><label style={lbl}>Fellow candidate</label>
+                          <select value={examMA.who} onChange={ev => setExamMA(p => ({ ...p, who: ev.target.value }))} style={{ ...inp, fontSize: 12, padding: "4px 6px" }}>
+                            <option value="">Select level...</option>
+                            <option value="Weak L3 candidate">Weak L3</option>
+                            <option value="Solid L3 candidate">Solid L3</option>
+                            <option value="Strong L3 candidate">Strong L3</option>
+                            <option value="Advanced AT candidate">Advanced AT candidate</option>
+                          </select>
+                        </div>
                         <div><label style={lbl}>Activity</label><input value={examMA.activity} onChange={ev => setExamMA(p => ({ ...p, activity: ev.target.value }))} placeholder="e.g., Dynamic Short Turns" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
                         <div><label style={lbl}>Conditions</label><input value={examMA.conditions} onChange={ev => setExamMA(p => ({ ...p, conditions: ev.target.value }))} placeholder="e.g., Groomed blue, firm" style={{ ...inp, fontSize: 12, padding: "4px 6px" }} /></div>
                       </div>
@@ -3881,7 +3930,7 @@ PROGRESS I'VE NOTICED:
                               setExamMA(p => ({ ...p, dialogMessages: newMsgs }));
                               ev.target.value = "";
                               setExamMALoading(true);
-                              const context = `You are a ${examMA.who} who just performed ${examMA.activity} on ${examMA.conditions}. The trainer observed you and now has questions.`;
+                              const context = `You are a fellow AT candidate (${examMA.who}) who just performed ${examMA.activity} on ${examMA.conditions} during an AT assessment. You are L3 certified or above. The trainer (another AT candidate) observed you and now has questions. You understand skiing terminology and can discuss technique — but your level of self-awareness and precision varies based on whether you are a weak L3, solid L3, strong L3, or advanced AT candidate.`;
                               const msgs = [{ role: "user", content: context }, ...newMsgs];
                               const resp = await callClaude(msgs, buildSystemPrompt(MA_PEER_DIALOG_SYSTEM));
                               setExamMA(p => ({ ...p, dialogMessages: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -3897,7 +3946,7 @@ PROGRESS I'VE NOTICED:
                           setExamMA(p => ({ ...p, dialogMessages: newMsgs }));
                           el.value = "";
                           setExamMALoading(true);
-                          const context = `You are a ${examMA.who} who just performed ${examMA.activity} on ${examMA.conditions}. The trainer observed you and now has questions.`;
+                          const context = `You are a fellow AT candidate (${examMA.who}) who just performed ${examMA.activity} on ${examMA.conditions} during an AT assessment. You are L3 certified or above. The trainer (another AT candidate) observed you and now has questions. You understand skiing terminology and can discuss technique — but your level of self-awareness and precision varies based on whether you are a weak L3, solid L3, strong L3, or advanced AT candidate.`;
                           const msgs = [{ role: "user", content: context }, ...newMsgs];
                           const resp = await callClaude(msgs, buildSystemPrompt(MA_PEER_DIALOG_SYSTEM));
                           setExamMA(p => ({ ...p, dialogMessages: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -3955,7 +4004,7 @@ PROGRESS I'VE NOTICED:
                               ev.target.value = "";
                               setExamMALoading(true);
                               const prevDialog = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                              const context = `You are a ${examMA.who} who just performed ${examMA.activity} on ${examMA.conditions}. You had a dialog with the trainer (Mark) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nKeep responses to 2-3 sentences. Be natural.`;
+                              const context = `You are a fellow AT candidate (${examMA.who}) who just performed ${examMA.activity} on ${examMA.conditions} during an AT assessment. You are L3 certified or above. You had a dialog with the trainer (Mark, another AT candidate) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nKeep responses to 2-3 sentences. Be natural. As an L3+ instructor you understand terminology and engage meaningfully — your self-awareness matches your level.`;
                               const msgs = [{ role: "user", content: context }, ...newMsgs];
                               const resp = await callClaude(msgs, buildSystemPrompt(MA_PEER_DIALOG_SYSTEM));
                               setExamMA(p => ({ ...p, prescriptionDialog: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -3972,7 +4021,7 @@ PROGRESS I'VE NOTICED:
                           el.value = "";
                           setExamMALoading(true);
                           const prevDialog = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                          const context = `You are a ${examMA.who} who just performed ${examMA.activity} on ${examMA.conditions}. You had a dialog with the trainer (Mark) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nKeep responses to 2-3 sentences. Be natural.`;
+                          const context = `You are a fellow AT candidate (${examMA.who}) who just performed ${examMA.activity} on ${examMA.conditions} during an AT assessment. You are L3 certified or above. You had a dialog with the trainer (Mark, another AT candidate) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nKeep responses to 2-3 sentences. Be natural. As an L3+ instructor you understand terminology and engage meaningfully — your self-awareness matches your level.`;
                           const msgs = [{ role: "user", content: context }, ...newMsgs];
                           const resp = await callClaude(msgs, buildSystemPrompt(MA_PEER_DIALOG_SYSTEM));
                           setExamMA(p => ({ ...p, prescriptionDialog: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -4285,14 +4334,14 @@ PROGRESS I'VE NOTICED:
                               id: uid(), date: today(), context: `AT MA Exam${revCount > 0 ? " (" + revCount + " revision" + (revCount > 1 ? "s" : "") + ")" : ""}`,
                               who: examMA.who, activity: examMA.activity,
                               transcript: fullTranscript,
-                              notes: examMA.videoUrl ? `Video: ${examMA.videoUrl}` : "",
+                              notes: examMA.videoUrl ? `Video: ${examMA.videoUrl}${examMA.videoSkier ? ` | Skier: ${examMA.videoSkier}` : ""}${examMA.videoTime ? ` | Time: ${examMA.videoTime}` : ""}` : "",
                               summary: JSON.stringify(summaryObj),
                               mentorFeedback: [],
                               videoUrl: examMA.videoUrl,
                             };
                             saveMaSessions([newSession, ...maSessions]);
 
-                            setExamMA({ phase: "setup", videoUrl: "", who: "", activity: "", conditions: "", observations: "", rootCause: "", dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [], presentation: "", debriefMessages: [], result: null, attempts: [], attemptNumber: 1 });
+                            setExamMA({ phase: "setup", videoUrl: "", videoSkier: "", videoTime: "", who: "", activity: "", conditions: "", observations: "", rootCause: "", dialogMessages: [], prescription: "", prescriptionReason: "", prescriptionDialog: [], presentation: "", debriefMessages: [], result: null, attempts: [], attemptNumber: 1 });
                           }} style={{
                             flex: 1, padding: "10px", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer",
                             background: "rgba(40,168,88,0.08)", border: "1px solid rgba(40,168,88,0.25)", color: "#28a858",

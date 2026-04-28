@@ -1404,9 +1404,12 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         const maSessionRows = allMaRows.filter(r => r.id?.startsWith("ma_"));
         if (maSessionRows.length > 0) {
           const sessions = maSessionRows.map(r => {
-            // Try proper columns first, fall back to JSON blob
-            if (r.date || r.type || r.transcript) {
-              // Proper column format
+            // Detect JSON blob in wrong column (migration put blob in column B which might be "date")
+            const blobField = r.data || r.date || "";
+            const looksLikeJson = typeof blobField === "string" && blobField.startsWith("{") && blobField.includes('"id"');
+            
+            if (!looksLikeJson && (r.transcript || r.type)) {
+              // Proper column format — fields have real values
               let sections = {}, mentorFeedback = [];
               try { sections = r.sections ? JSON.parse(r.sections) : {}; } catch(e) {}
               try { mentorFeedback = r.mentorFeedback ? JSON.parse(r.mentorFeedback) : []; } catch(e) {}
@@ -1428,16 +1431,15 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                 mentorFeedback,
               };
             }
-            // Legacy JSON blob format
+            // JSON blob format — try parsing from data column, then date column (migration bug)
+            const blob = r.data || r.date || "";
             try {
-              const parsed = JSON.parse(r.data);
+              const parsed = JSON.parse(blob);
               return { ...parsed, id: parsed.id || (r.id || "").replace(/^ma_/, "") };
             } catch(e) { return null; }
           }).filter(Boolean);
           console.log("Loaded", sessions.length, "MA sessions from MASessions tab");
-          if (sessions[0]) console.log("First loaded session:", JSON.stringify(sessions[0]).slice(0, 300));
           setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
-          // Mark all as already saved
           sessions.forEach(s => { lastSavedRef.current[s.id] = JSON.stringify(s); });
         } else {
           // Legacy: single _MA_SESSIONS row or ma_* rows in JournalEntries
@@ -3330,15 +3332,7 @@ PROGRESS I'VE NOTICED:
                   {isCandidate ? "Practice MA in the Sparring Partner tab (Written MA mode) or add sessions in Resources." : "Mark hasn't recorded any MA sessions yet."}
                 </div>
               </Card>
-            ) : (() => { 
-              const s0 = maSessions[0]; 
-              console.log("=== MA HISTORY DEBUG ===", maSessions.length, "sessions");
-              console.log("Session 0 keys:", Object.keys(s0 || {}));
-              console.log("Session 0 summary:", typeof s0?.summary, String(s0?.summary || "EMPTY").slice(0, 200));
-              console.log("Session 0 transcript:", typeof s0?.transcript, String(s0?.transcript || "EMPTY").slice(0, 100));
-              console.log("Session 0 id:", s0?.id, "date:", s0?.date, "type:", s0?.type, "context:", s0?.context);
-              return null; 
-            })() || [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
+            ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
               let aiScores = parseSummary(s.summary);
               // If parseSummary returned raw but no scores, try harder
               if (aiScores && !aiScores.scores && aiScores.raw) {

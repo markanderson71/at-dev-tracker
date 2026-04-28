@@ -171,6 +171,7 @@ async function apiPost(action, sheetName, rowData) {
 
 function apiCreate(s, d) { return apiPost("create", s, d); }
 function apiUpdate(s, d) { return apiPost("update", s, d); }
+function apiDelete(s, id) { return apiPost("delete", s, { _id: id, id: id }); }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const parseAIJson = (resp) => {
@@ -1313,9 +1314,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
   // ── Load data ──────────────────────────────────────────
   useEffect(() => {
-    const url = getApiUrl();
-    console.log("AT Journal init — API URL:", url ? url.slice(0, 50) + "..." : "NOT SET");
-    if (!url) { console.warn("No API URL configured — running in offline mode"); setApiStatus("offline"); setDataLoaded(true); return; }
+    console.log("AT Journal init — loading data through Vercel proxy");
     async function loadAll() {
       try {
         // Load journal entries
@@ -1378,10 +1377,28 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
           setReferenceMaterials(rmRow.data);
         }
 
-        // Load MA session transcripts
-        const maRow = rows.find(r => r.id === "_MA_SESSIONS");
-        if (maRow && maRow.data) {
-          try { setMaSessions(JSON.parse(maRow.data)); } catch(e) {}
+        // Load MA session transcripts — individual rows (ma_SESSIONID) with fallback to legacy _MA_SESSIONS
+        const maRows = rows.filter(r => r.id?.startsWith("ma_"));
+        if (maRows.length > 0) {
+          const sessions = maRows.map(r => {
+            try { return JSON.parse(r.data); } catch(e) { return null; }
+          }).filter(Boolean);
+          console.log("Loaded", sessions.length, "MA sessions from individual rows");
+          setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+        } else {
+          // Legacy: load from single _MA_SESSIONS row
+          const maRow = rows.find(r => r.id === "_MA_SESSIONS");
+          if (maRow && maRow.data) {
+            try {
+              const legacy = JSON.parse(maRow.data);
+              console.log("Loaded", legacy.length, "MA sessions from legacy _MA_SESSIONS row — will migrate on next save");
+              setMaSessions(legacy);
+              // Migrate: save each session to its own row
+              for (const session of legacy) {
+                apiCreate("JournalEntries", { id: `ma_${session.id}`, data: JSON.stringify(session) });
+              }
+            } catch(e) {}
+          }
         }
 
         // Load videos
@@ -1399,7 +1416,12 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
       } catch (e) { console.error("Failed to load:", e); setApiStatus("error"); }
       setDataLoaded(true);
     }
-    loadAll();
+    loadAll().then(() => {
+      // Check if we got any data — if not, API might not be configured
+      if (maSessions.length === 0 && entries.length === 0) {
+        console.warn("No data loaded — Vercel APPS_SCRIPT_URL may not be configured");
+      }
+    });
   }, []);
 
   // ── Helpers ────────────────────────────────────────────
@@ -1475,15 +1497,50 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     }, 2000);
   };
 
-  const saveMaSessions = async (sessions) => {
-    setMaSessions(sessions);
-    const ok = await apiUpdate("JournalEntries", { id: "_MA_SESSIONS", data: JSON.stringify(sessions) });
+  const saveMaSession = async (session) => {
+    // Save individual session to its own row
+    const rowId = `ma_${session.id}`;
+    const ok = await apiUpdate("JournalEntries", { id: rowId, data: JSON.stringify(session) });
     if (!ok) {
-      setSaveError("MA sessions failed to save — data is in memory but NOT persisted. Don't refresh until the save succeeds.");
-      console.error("MA sessions save failed — data in memory only");
-    } else {
-      setSaveError(null);
+      // Try create if update fails (new session)
+      const ok2 = await apiCreate("JournalEntries", { id: rowId, data: JSON.stringify(session) });
+      if (!ok2) {
+        setSaveError("MA session failed to save — data is in memory but NOT persisted. Don't refresh.");
+        console.error("MA session save failed:", session.id);
+        return false;
+      }
     }
+    setSaveError(null);
+    return true;
+  };
+
+  const deleteMaSession = async (sessionId) => {
+    const rowId = `ma_${sessionId}`;
+    await apiDelete("JournalEntries", rowId);
+    setMaSessions(prev => prev.filter(s => s.id !== sessionId));
+  };
+
+  const lastSavedRef = useRef({});
+
+  const saveMaSessions = async (sessions) => {
+    // Update state immediately
+    setMaSessions(sessions);
+
+    // Only save sessions that changed since last save
+    let anyFailed = false;
+    for (const session of sessions) {
+      const hash = JSON.stringify(session);
+      if (lastSavedRef.current[session.id] !== hash) {
+        const ok = await saveMaSession(session);
+        if (ok) {
+          lastSavedRef.current[session.id] = hash;
+        } else {
+          anyFailed = true;
+        }
+      }
+    }
+
+    if (!anyFailed) setSaveError(null);
   };
 
   const buildScoreInput = (session) => {
@@ -1903,9 +1960,13 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
             <div style={{ margin: "8px 0 0", padding: "8px 12px", borderRadius: 6, background: "rgba(224,80,40,0.12)", border: "1px solid rgba(224,80,40,0.3)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
               <div style={{ fontSize: 12, color: "#e05028", fontWeight: 600 }}>{saveError}</div>
               <button onClick={async () => {
-                const ok = await apiUpdate("JournalEntries", { id: "_MA_SESSIONS", data: JSON.stringify(maSessions) });
-                if (ok) setSaveError(null);
-                else alert("Save still failing — check your connection or wait for quota to reset.");
+                let allOk = true;
+                for (const session of maSessions) {
+                  const ok = await saveMaSession(session);
+                  if (!ok) allOk = false;
+                }
+                if (allOk) setSaveError(null);
+                else alert("Some saves still failing — check connection or wait for quota reset.");
               }} style={{ padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: "rgba(224,80,40,0.1)", border: "1px solid rgba(224,80,40,0.3)", color: "#e05028", flexShrink: 0 }}>Retry Save</button>
             </div>
           )}
@@ -2467,7 +2528,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                     }}>{analyzingMA === s.id ? "Analyzing..." : "🧠 Analyze My MA"}</button>
                     <button onClick={() => {
                       if (confirm("Delete this MA session?")) {
-                        saveMaSessions(maSessions.filter(x => x.id !== s.id));
+                        deleteMaSession(s.id);
                       }
                     }} style={{
                       background: "none", border: "none", color: "#4d6888", fontSize: 11, cursor: "pointer",
@@ -3419,7 +3480,7 @@ PROGRESS I'VE NOTICED:
                   <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.04)", textAlign: "right" }}>
                     <button onClick={() => {
                       if (confirm("Delete this MA session? This cannot be undone.")) {
-                        saveMaSessions(maSessions.filter(x => x.id !== s.id));
+                        deleteMaSession(s.id);
                       }
                     }} style={{
                       background: "none", border: "1px solid rgba(224,80,40,0.15)", borderRadius: 4, padding: "4px 10px",

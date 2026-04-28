@@ -172,6 +172,11 @@ async function apiPost(action, sheetName, rowData) {
 function apiCreate(s, d) { return apiPost("create", s, d); }
 function apiUpdate(s, d) { return apiPost("update", s, d); }
 function apiDelete(s, id) { return apiPost("delete", s, { _id: id, id: id }); }
+async function apiUpsert(s, d) {
+  const ok = await apiUpdate(s, d);
+  if (!ok) return apiCreate(s, d);
+  return true;
+}
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const parseAIJson = (resp) => {
@@ -1431,59 +1436,35 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
           }).filter(Boolean);
           console.log("Loaded", sessions.length, "MA sessions from MASessions tab");
           setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+          // Mark all as already saved
+          sessions.forEach(s => { lastSavedRef.current[s.id] = JSON.stringify(s); });
         } else {
           // Legacy: single _MA_SESSIONS row or ma_* rows in JournalEntries
           const legacyMaRows = allConfigRows.filter(r => r.id?.startsWith("ma_"));
+          let legacySessions = [];
           if (legacyMaRows.length > 0) {
-            const sessions = legacyMaRows.map(r => {
+            legacySessions = legacyMaRows.map(r => {
               try { return JSON.parse(r.data); } catch(e) { return null; }
             }).filter(Boolean);
-            console.log("Migrating", sessions.length, "MA sessions from JournalEntries ma_* rows to MASessions tab");
-            setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
-            // Migrate to new tab
-            for (const session of sessions) {
-              saveMaSession(session);
-            }
+            console.log("Found", legacySessions.length, "MA sessions in JournalEntries ma_* rows");
           } else {
             const legacyMA = allConfigRows.find(r => r.id === "_MA_SESSIONS");
             if (legacyMA?.data) {
-              try {
-                const legacy = JSON.parse(legacyMA.data);
-                console.log("Migrating", legacy.length, "MA sessions from legacy _MA_SESSIONS row");
-                setMaSessions(legacy);
-                for (const session of legacy) {
-                  saveMaSession(session);
-                }
-              } catch(e) {}
+              try { legacySessions = JSON.parse(legacyMA.data); } catch(e) {}
+              console.log("Found", legacySessions.length, "MA sessions in legacy _MA_SESSIONS row");
             }
+          }
+          if (legacySessions.length > 0) {
+            setMaSessions(legacySessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
           }
         }
 
-        // ── Auto-migrate to new tabs if loaded from fallback ──
+        // ── Server-side migration if new tabs are empty ──
         if (!hasNewTabs && fallbackRows.length > 0) {
-          console.log("Auto-migrating data to new tab structure...");
-          // Migrate config rows
-          const configIds = ["_THEMES", "_CHECKPOINTS", "_COACH_NOTES", "_MENTOR_ASSESSMENTS", "_REFERENCE_MATERIALS", "_VIDEOS", "_CLINIC_FEEDBACK"];
-          for (const cid of configIds) {
-            const row = fallbackRows.find(r => r.id === cid);
-            if (row) apiCreate("Config", { id: row.id, data: row.data });
-          }
-          // Journal entries already in Journal tab format — create them
-          for (const entry of parsed) {
-            apiCreate("Journal", {
-              id: entry.id, date: entry.date || "", context: entry.context || "",
-              location: entry.location || "", conditions: entry.conditions || "",
-              whatISaw: entry.whatISaw || "", whatWasGoingOn: entry.whatWasGoingOn || "",
-              whatIDid: entry.whatIDid || "", whyThatApproach: entry.whyThatApproach || "",
-              whatHappened: entry.whatHappened || "", whatIdDoDifferently: entry.whatIdDoDifferently || "",
-              videoUrl: entry.videoUrl || "", connectionTags: JSON.stringify(entry.connectionTags || []),
-              themeIds: JSON.stringify(entry.themeIds || []), depthLevel: entry.depthLevel || "",
-              resourceId: entry.resourceId || "", season: entry.season || "",
-              timestamp: entry.timestamp || "", mentorPulse: JSON.stringify(entry.mentorPulse || {}),
-              mentorComments: JSON.stringify(entry.mentorComments || []),
-            });
-          }
-          console.log("Migration complete — new tabs populated");
+          console.log("Triggering server-side migration to new tab structure...");
+          const ok = await apiPost("migrate", "JournalEntries", {});
+          if (ok) console.log("Server-side migration complete — data copied to Journal, Config, MASessions tabs");
+          else console.warn("Migration may have failed — check Apps Script execution logs");
         }
 
       } catch (e) { console.error("Failed to load:", e); setApiStatus("error"); }
@@ -1530,38 +1511,38 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
     console.log("Saving entry:", entry.id, alreadySaved ? "UPDATE" : "CREATE");
     if (alreadySaved) {
-      apiUpdate("Journal", sheetRow);
+      apiUpsert("Journal", sheetRow);
     } else {
-      apiCreate("Journal", sheetRow);
+      apiUpsert("Journal", sheetRow);
       savedIdsRef.current.add(entry.id);
     }
   };
 
   const saveThemes = (newThemes) => {
     setThemes(newThemes);
-    apiUpdate("Config", { id: "_THEMES", data: JSON.stringify(newThemes) });
+    apiUpsert("Config", { id: "_THEMES", data: JSON.stringify(newThemes) });
   };
 
   const saveCheckpoints = (newCps) => {
     setCheckpoints(newCps);
-    apiUpdate("Config", { id: "_CHECKPOINTS", data: JSON.stringify(newCps) });
+    apiUpsert("Config", { id: "_CHECKPOINTS", data: JSON.stringify(newCps) });
   };
 
   const saveCoachNotes = (notes) => {
     setMentorCoachNotes(notes);
-    apiUpdate("Config", { id: "_COACH_NOTES", data: JSON.stringify(notes) });
+    apiUpsert("Config", { id: "_COACH_NOTES", data: JSON.stringify(notes) });
   };
 
   const saveMentorAssessments = (assessments) => {
     setMentorAssessments(assessments);
-    apiUpdate("Config", { id: "_MENTOR_ASSESSMENTS", data: JSON.stringify(assessments) });
+    apiUpsert("Config", { id: "_MENTOR_ASSESSMENTS", data: JSON.stringify(assessments) });
   };
 
   const saveReferenceMaterials = (text) => {
     setReferenceMaterials(text);
     if (saveTimerRef.current._ref) clearTimeout(saveTimerRef.current._ref);
     saveTimerRef.current._ref = setTimeout(() => {
-      apiUpdate("Config", { id: "_REFERENCE_MATERIALS", data: text });
+      apiUpsert("Config", { id: "_REFERENCE_MATERIALS", data: text });
     }, 2000);
   };
 
@@ -1756,12 +1737,12 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
   const saveVideos = (vids) => {
     setVideos(vids);
-    apiUpdate("Config", { id: "_VIDEOS", data: JSON.stringify(vids) });
+    apiUpsert("Config", { id: "_VIDEOS", data: JSON.stringify(vids) });
   };
 
   const saveClinicFeedback = (fb) => {
     setClinicFeedback(fb);
-    apiUpdate("Config", { id: "_CLINIC_FEEDBACK", data: JSON.stringify(fb) });
+    apiUpsert("Config", { id: "_CLINIC_FEEDBACK", data: JSON.stringify(fb) });
   };
 
 

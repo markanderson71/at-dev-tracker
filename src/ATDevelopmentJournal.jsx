@@ -28,15 +28,76 @@ const PULSE_OPTIONS = [
   { id: "integrated", label: "Integrated", desc: "Hit the mark — saw the whole picture", color: "#28a858", icon: "★" },
 ];
 
-// ── Reflection Prompts ──────────────────────────────────
-const PROMPTS = [
-  { id: "whatISaw", label: "What did I see?", placeholder: "Describe the moment — what was happening with the student, the group, or your own skiing...", nudge: null },
-  { id: "whatWasGoingOn", label: "What was really going on underneath?", placeholder: "Root cause — connect the symptom to the underlying issue. Why was this happening?", nudge: "You described what you saw. But what's the root cause? Think about biomechanics, terrain, confidence, tactics..." },
-  { id: "whatIDid", label: "What did I do about it?", placeholder: "Your teaching decision — terrain choice, exercise, progression, demo, verbal cue...", nudge: null },
-  { id: "whyThatApproach", label: "Why that approach and not another?", placeholder: "What made you choose this over other options? What were you considering?", nudge: "You described what you did — but why that and not something else? What other approaches did you consider?" },
-  { id: "whatHappened", label: "What happened?", placeholder: "The outcome — did it work? What changed? What didn't change?", nudge: null },
-  { id: "whatIdDoDifferently", label: "What would I do differently?", placeholder: "Knowing what you know now — what would you change? What did you learn?", nudge: null },
-];
+// ── Journal Entry Types with Adaptive Prompts ──────────
+const ENTRY_TYPES = {
+  coaching: { label: "On-Hill Coaching / MA", icon: "🎿" },
+  personal: { label: "Personal Skiing", icon: "⛷" },
+  clinic: { label: "Clinic Attended", icon: "📋" },
+  feedback: { label: "Feedback Received", icon: "💬" },
+  study: { label: "Study / Reading / Video", icon: "📖" },
+  general: { label: "General Note", icon: "📝" },
+};
+
+const PROMPTS_BY_TYPE = {
+  coaching: [
+    { id: "whatISaw", label: "What did I see?", placeholder: "Describe the moment — what was happening with the student, the group, or the skier you observed..." },
+    { id: "whatWasGoingOn", label: "What was really going on underneath?", placeholder: "Root cause — connect the symptom to the underlying issue. Why was this happening?" },
+    { id: "whatIDid", label: "What did I do about it?", placeholder: "Your teaching decision — terrain choice, exercise, progression, demo, verbal cue..." },
+    { id: "whyThatApproach", label: "Why that approach and not another?", placeholder: "What made you choose this over other options? What were you considering?" },
+    { id: "whatHappened", label: "What happened?", placeholder: "The outcome — did it work? What changed? What didn't change?" },
+    { id: "whatIdDoDifferently", label: "What would I do differently?", placeholder: "Knowing what you know now — what would you change? What did you learn?" },
+  ],
+  personal: [
+    { id: "whatISaw", label: "What was I working on?", placeholder: "My focus for this session — what skill, movement, or feeling was I targeting?" },
+    { id: "whatWasGoingOn", label: "What did I feel vs what was actually happening?", placeholder: "The gap between intention and execution — what sensations did I notice? What was actually going on?" },
+    { id: "whatIDid", label: "What adjustments did I make?", placeholder: "What did I try? Terrain changes, focus shifts, drills, mental cues..." },
+    { id: "whyThatApproach", label: "What worked and what didn't?", placeholder: "Which adjustments produced change? Which ones didn't? Why?" },
+    { id: "whatHappened", label: "Where am I now vs where I started?", placeholder: "Did the session move me forward? What's the current state of this skill?" },
+    { id: "whatIdDoDifferently", label: "What will I try next?", placeholder: "Next session focus — what will I carry forward, what will I change?" },
+  ],
+  clinic: [
+    { id: "whatISaw", label: "What was the subject / focus?", placeholder: "Topic of the clinic — who led it, what was the intended learning?" },
+    { id: "whatWasGoingOn", label: "Key takeaways", placeholder: "The 2-3 things that stuck — concepts, drills, frameworks, aha moments..." },
+    { id: "whatIDid", label: "How does this connect to my development?", placeholder: "Link to your AT gaps, your themes, or something your mentors have been pushing on..." },
+    { id: "whyThatApproach", label: "What resonated most and why?", placeholder: "The thing that clicked — why did it land? What shifted in your understanding?" },
+    { id: "whatHappened", label: "What will I apply or try?", placeholder: "Concrete next steps — what will you do differently because of this clinic?" },
+    { id: "whatIdDoDifferently", label: "Questions that remain", placeholder: "What are you still unsure about? What do you want to explore further?" },
+  ],
+  feedback: [
+    { id: "whatISaw", label: "Who gave the feedback and what was the context?", placeholder: "Chris after watching me teach, Gates during a training session, a peer after a clinic..." },
+    { id: "whatWasGoingOn", label: "What did they say?", placeholder: "Capture the feedback as accurately as you can — their words, their observations..." },
+    { id: "whatIDid", label: "What resonated?", placeholder: "Which parts landed? What do you agree with or see in yourself?" },
+    { id: "whyThatApproach", label: "What challenged me?", placeholder: "Which parts were hard to hear or that you're not sure about?" },
+    { id: "whatHappened", label: "How does this connect to other feedback?", placeholder: "Is this a pattern? Have you heard this before? Does it connect to your themes?" },
+    { id: "whatIdDoDifferently", label: "What will I work on?", placeholder: "Concrete action — what changes based on this feedback?" },
+  ],
+  study: [
+    { id: "whatISaw", label: "What did I read, watch, or study?", placeholder: "Article, video, manual section — include link if you have one..." },
+    { id: "whatWasGoingOn", label: "What clicked or connected?", placeholder: "The concept or insight that resonated — what did you understand differently after?" },
+    { id: "whatIDid", label: "How does this relate to something I'm working on?", placeholder: "Connect to your skiing, your teaching, your AT development, your themes..." },
+    { id: "whyThatApproach", label: "How does this change my understanding?", placeholder: "What did you think before vs after? What shifted?" },
+    { id: "whatHappened", label: "How will I apply this?", placeholder: "Next time on snow, in a clinic, or doing an MA — how will this show up?" },
+    { id: "whatIdDoDifferently", label: "What do I want to explore further?", placeholder: "Follow-up reading, questions to ask mentors, things to try..." },
+  ],
+  general: [
+    { id: "whatISaw", label: "What's on my mind?", placeholder: "Free form — capture whatever is relevant to your development right now..." },
+    { id: "whatWasGoingOn", label: "Why does this matter?", placeholder: "Why is this worth noting? How does it connect to your bigger picture?" },
+    { id: "whatIDid", label: "Additional thoughts", placeholder: "Anything else you want to capture..." },
+    { id: "whyThatApproach", label: "", placeholder: "" },
+    { id: "whatHappened", label: "", placeholder: "" },
+    { id: "whatIdDoDifferently", label: "", placeholder: "" },
+  ],
+};
+
+const PROMPTS = PROMPTS_BY_TYPE.coaching;
+
+// ── Speaker Colors (for dialog display) ──────────────
+const SPEAKER = {
+  mark: { color: "#60b0d0", label: "Mark" },
+  peer: { color: "#c080d0", label: "Peer" },
+  examiner: { color: "#e0a040", label: "Examiner" },
+  ai: { color: "#7a9ab5", label: "AI" },
+};
 
 // ── Default Themes ──────────────────────────────────────
 const DEFAULT_THEMES = [
@@ -1492,6 +1553,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     const sheetRow = {
       id: entry.id,
       date: entry.date || "",
+      entryType: entry.entryType || "coaching",
       context: entry.context || "",
       location: entry.location || "",
       conditions: entry.conditions || "",
@@ -2076,9 +2138,10 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
           <>
             {isCandidate && (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontSize: 14, color: "#7a9ab5" }}>Reflect on your on-snow experiences. Go deeper than what happened — explore <em>why</em>.</div>
+                <div style={{ fontSize: 14, color: "#7a9ab5" }}>Capture your development — coaching, skiing, clinics, feedback, study.</div>
                 <button onClick={() => setEditingEntry({
-                  id: uid(), date: today(), context: "Clinic", location: "", conditions: "",
+                  id: uid(), date: today(), context: "", location: "", conditions: "",
+                  entryType: "coaching",
                   whatISaw: "", whatWasGoingOn: "", whatIDid: "", whyThatApproach: "", whatHappened: "", whatIdDoDifferently: "",
                   videoUrl: "", connectionTags: [], themeIds: [], depthLevel: "", resourceId: "",
                   season: getCurrentSeason(), mentorPulse: {}, mentorComments: [], timestamp: new Date().toISOString(),
@@ -2086,7 +2149,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   padding: "7px 14px", borderRadius: 6, border: "1px solid rgba(224,120,48,0.4)",
                   background: "rgba(224,120,48,0.1)", color: "#e8a050", fontSize: 14, fontWeight: 700, cursor: "pointer",
                   whiteSpace: "nowrap", flexShrink: 0, marginLeft: 10,
-                }}>+ New Reflection</button>
+                }}>+ New Entry</button>
               </div>
             )}
 
@@ -2130,10 +2193,11 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                           <div>
                             <div style={{ fontSize: 12, color: "#7a9ab5", marginBottom: 4 }}>
+                              {e.entryType && ENTRY_TYPES[e.entryType] ? `${ENTRY_TYPES[e.entryType].icon} ` : ""}
                               {e.date} · {e.context}{e.location ? ` · ${e.location}` : ""}
                             </div>
                             <div style={{ fontSize: 15, fontWeight: 600, color: "#d0d8e0", lineHeight: 1.4 }}>
-                              {e.whatISaw ? (e.whatISaw.length > 100 ? e.whatISaw.slice(0, 100) + "…" : e.whatISaw) : "Untitled reflection"}
+                              {e.whatISaw ? (e.whatISaw.length > 100 ? e.whatISaw.slice(0, 100) + "…" : e.whatISaw) : "Untitled entry"}
                             </div>
                           </div>
                           {mentorDepth && (
@@ -2166,11 +2230,14 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
               <button onClick={() => { setViewingEntry(null); setChallengeResponse(null); }} style={{ background: "none", border: "none", color: "#7a9ab5", fontSize: 14, cursor: "pointer", padding: "0 0 10px", fontWeight: 600 }}>← Back</button>
               <Card>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, color: "#7a9ab5" }}>{e.date} · {e.context}{e.location ? ` · ${e.location}` : ""}{e.conditions ? ` · ${e.conditions}` : ""}</div>
+                  <div style={{ fontSize: 12, color: "#7a9ab5" }}>
+                    {e.entryType && ENTRY_TYPES[e.entryType] ? `${ENTRY_TYPES[e.entryType].icon} ${ENTRY_TYPES[e.entryType].label} · ` : ""}
+                    {e.date} · {e.context}{e.location ? ` · ${e.location}` : ""}{e.conditions ? ` · ${e.conditions}` : ""}
+                  </div>
                   {isCandidate && <button onClick={() => setEditingEntry({ ...e })} style={{ padding: "4px 10px", borderRadius: 5, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#7a9ab5", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Edit</button>}
                 </div>
 
-                {PROMPTS.map(p => {
+                {(PROMPTS_BY_TYPE[e.entryType] || PROMPTS).filter(p => p.label).map(p => {
                   const val = e[p.id];
                   if (!val) return null;
                   return (
@@ -2209,7 +2276,8 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   <button onClick={async () => {
                     setChallengeLoading(true);
                     setChallengeResponse(null);
-                    const reflectionText = PROMPTS.map(p => e[p.id] ? `${p.label}\n${e[p.id]}` : "").filter(Boolean).join("\n\n");
+                    const entryPrompts = (PROMPTS_BY_TYPE[e.entryType] || PROMPTS).filter(p => p.label);
+                    const reflectionText = entryPrompts.map(p => e[p.id] ? `${p.label}\n${e[p.id]}` : "").filter(Boolean).join("\n\n");
                     const resp = await callClaude([
                       { role: "user", content: `Here is my reflection from ${e.date} (${e.context}${e.location ? `, ${e.location}` : ""}):\n\n${reflectionText}\n\nI tagged these connections: ${(e.connectionTags || []).join(", ")}.\n\nChallenge my thinking. Push me to go deeper. What am I missing? What connections haven't I made?` }
                     ], buildSystemPrompt(AT_COACH_SYSTEM));
@@ -2306,13 +2374,28 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         {editingEntry && (() => {
           const e = editingEntry;
           const upd = (f, v) => setEditingEntry(p => ({ ...p, [f]: v }));
-          const filledPrompts = PROMPTS.filter(p => e[p.id]?.trim()).length;
+          const currentType = e.entryType || "coaching";
+          const typePrompts = PROMPTS_BY_TYPE[currentType] || PROMPTS;
+          const activePrompts = typePrompts.filter(p => p.label);
+          const filledPrompts = activePrompts.filter(p => e[p.id]?.trim()).length;
           return (
             <div>
               <button onClick={() => setEditingEntry(null)} style={{ background: "none", border: "none", color: "#7a9ab5", fontSize: 14, cursor: "pointer", padding: "0 0 10px", fontWeight: 600 }}>← Cancel</button>
               <Card>
                 <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 14, color: "#e0e8f0" }}>
-                  {entries.find(x => x.id === e.id) ? "Edit Reflection" : "New Reflection"}
+                  {entries.find(x => x.id === e.id) ? "Edit Entry" : "New Entry"}
+                </div>
+
+                {/* Entry type selector */}
+                <div style={{ display: "flex", gap: 4, marginBottom: 14, flexWrap: "wrap" }}>
+                  {Object.entries(ENTRY_TYPES).map(([key, t]) => (
+                    <button key={key} onClick={() => upd("entryType", key)} style={{
+                      padding: "5px 10px", borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                      background: currentType === key ? "rgba(224,120,48,0.1)" : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${currentType === key ? "rgba(224,120,48,0.35)" : "rgba(255,255,255,0.06)"}`,
+                      color: currentType === key ? "#e8a050" : "#7a9ab5",
+                    }}>{t.icon} {t.label}</button>
+                  ))}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
@@ -2326,20 +2409,13 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   <div><label style={lbl}>Location</label><input value={e.location} onChange={ev => upd("location", ev.target.value)} placeholder="e.g., Keystone — Run 6" style={inp} /></div>
                 </div>
 
-                {/* 6 Prompts */}
-                {PROMPTS.map((p, pi) => {
-                  const prevFilled = pi === 0 || e[PROMPTS[pi - 1].id]?.trim();
-                  const showNudge = pi > 0 && p.nudge && prevFilled && !e[p.id]?.trim() && filledPrompts >= 2;
-                  return (
-                    <div key={p.id} style={{ marginBottom: 14 }}>
-                      <label style={lbl}>{pi + 1}. {p.label}</label>
-                      {showNudge && (
-                        <div style={{ fontSize: 12, color: "#c060a0", marginBottom: 4, fontStyle: "italic" }}>💡 {p.nudge}</div>
-                      )}
-                      <textarea value={e[p.id] || ""} onChange={ev => upd(p.id, ev.target.value)} placeholder={p.placeholder} style={txta} />
-                    </div>
-                  );
-                })}
+                {/* Adaptive Prompts based on entry type */}
+                {activePrompts.map((p, pi) => (
+                  <div key={p.id} style={{ marginBottom: 14 }}>
+                    <label style={lbl}>{pi + 1}. {p.label}</label>
+                    <textarea value={e[p.id] || ""} onChange={ev => upd(p.id, ev.target.value)} placeholder={p.placeholder} style={txta} />
+                  </div>
+                ))}
 
                 {/* Video */}
                 <div style={{ marginBottom: 14 }}>
@@ -3439,7 +3515,21 @@ PROGRESS I'VE NOTICED:
                   {/* Mark's MA transcript */}
                   <details style={{ marginBottom: 8 }}>
                     <summary style={{ fontSize: 12, color: "#c060a0", cursor: "pointer", fontWeight: 600 }}>Mark's MA analysis</summary>
-                    <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(255,255,255,0.02)", fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap", marginTop: 4 }}>{s.transcript || "No transcript"}</div>
+                    <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(255,255,255,0.02)", fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, marginTop: 4 }}>
+                      {(s.transcript || "No transcript").split("\n").map((line, li) => {
+                        const markMatch = line.match(/^(Mark(?:\s*\(trainer\))?)\s*:/);
+                        const peerMatch = line.match(/^(Peer|Chuck|Sarah|[A-Z][a-z]+\s*\(peer\))\s*:/);
+                        const examinerMatch = line.match(/^(Examiner)\s*:/);
+                        const aiMatch = line.match(/^(AI)\s*:/);
+                        const sectionMatch = line.match(/^(PEER DIALOG|PRESCRIPTION DELIVER[A-Z]*[^:]*|PRESENTATION TO EXAMINER|EXAMINER Q&A|PRIVATE NOTES|Root cause)\s*:/);
+                        if (sectionMatch) return <div key={li} style={{ fontWeight: 700, color: "#7a9ab5", marginTop: 10, marginBottom: 2, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}>{line}</div>;
+                        if (markMatch) return <div key={li} style={{ marginBottom: 4 }}><span style={{ fontWeight: 700, color: SPEAKER.mark.color }}>{markMatch[1]}:</span>{line.slice(markMatch[0].length)}</div>;
+                        if (peerMatch) return <div key={li} style={{ marginBottom: 4 }}><span style={{ fontWeight: 700, color: SPEAKER.peer.color }}>{peerMatch[1]}:</span>{line.slice(peerMatch[0].length)}</div>;
+                        if (examinerMatch) return <div key={li} style={{ marginBottom: 4 }}><span style={{ fontWeight: 700, color: SPEAKER.examiner.color }}>{examinerMatch[1]}:</span>{line.slice(examinerMatch[0].length)}</div>;
+                        if (aiMatch) return <div key={li} style={{ marginBottom: 4 }}><span style={{ fontWeight: 700, color: SPEAKER.ai.color }}>{aiMatch[1]}:</span>{line.slice(aiMatch[0].length)}</div>;
+                        return <div key={li}>{line}</div>;
+                      })}
+                    </div>
                     {s.notes && (
                       <div style={{ padding: "6px 10px", borderRadius: 6, background: "rgba(224,120,48,0.04)", border: "1px solid rgba(224,120,48,0.1)", fontSize: 12, color: "#d0d8e0", lineHeight: 1.5, marginTop: 4 }}>
                         {(() => {
@@ -4162,7 +4252,7 @@ PROGRESS I'VE NOTICED:
                         {examMA.dialogMessages.map((m, i) => (
                           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 6 }}>
                             <div style={{ maxWidth: "85%", padding: "8px 12px", borderRadius: 10, background: m.role === "user" ? "rgba(208,96,96,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${m.role === "user" ? "rgba(208,96,96,0.15)" : "rgba(255,255,255,0.06)"}` }}>
-                              <div style={{ fontSize: 10, fontWeight: 600, color: m.role === "user" ? "#d06060" : "#7a9ab5", marginBottom: 2 }}>{m.role === "user" ? "Mark (trainer)" : `${examMA.who} (peer)`}</div>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: m.role === "user" ? SPEAKER.mark.color : SPEAKER.peer.color, marginBottom: 2 }}>{m.role === "user" ? "Mark (trainer)" : `${examMA.who || "Peer"}`}</div>
                               <div style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{m.content}</div>
                             </div>
                           </div>
@@ -4225,14 +4315,14 @@ PROGRESS I'VE NOTICED:
                         Deliver your prescription as you would to the instructor. Include the IDP task, variations, terrain, and connect it to their stated intent. This is NOT a coaching moment — but they need to understand WHY this task is relevant to what they're working on.
                       </div>
 
-                      <details style={{ marginBottom: 6 }}><summary style={{ fontSize: 11, color: "#4d6888", cursor: "pointer" }}>Previous dialog (review)</summary><div style={{ padding: "6px 8px", borderRadius: 5, background: "rgba(255,255,255,0.02)", fontSize: 12, color: "#d0d8e0", maxHeight: 150, overflowY: "auto", marginTop: 4 }}>{examMA.dialogMessages.map((m, i) => <div key={i} style={{ marginBottom: 4 }}><span style={{ fontWeight: 600, color: m.role === "user" ? "#d06060" : "#7a9ab5" }}>{m.role === "user" ? "Mark: " : "Peer: "}</span>{m.content}</div>)}</div></details>
+                      <details style={{ marginBottom: 6 }}><summary style={{ fontSize: 11, color: "#4d6888", cursor: "pointer" }}>Previous dialog (review)</summary><div style={{ padding: "6px 8px", borderRadius: 5, background: "rgba(255,255,255,0.02)", fontSize: 12, color: "#d0d8e0", maxHeight: 150, overflowY: "auto", marginTop: 4 }}>{examMA.dialogMessages.map((m, i) => <div key={i} style={{ marginBottom: 4 }}><span style={{ fontWeight: 600, color: m.role === "user" ? SPEAKER.mark.color : SPEAKER.peer.color }}>{m.role === "user" ? "Mark: " : "Peer: "}</span>{m.content}</div>)}</div></details>
 
                       {/* Prescription dialog messages */}
                       <div style={{ marginBottom: 8, maxHeight: 250, overflowY: "auto" }}>
                         {(examMA.prescriptionDialog || []).map((m, i) => (
                           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 6 }}>
                             <div style={{ maxWidth: "85%", padding: "8px 12px", borderRadius: 10, background: m.role === "user" ? "rgba(208,96,96,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${m.role === "user" ? "rgba(208,96,96,0.15)" : "rgba(255,255,255,0.06)"}` }}>
-                              <div style={{ fontSize: 10, fontWeight: 600, color: m.role === "user" ? "#d06060" : "#7a9ab5", marginBottom: 2 }}>{m.role === "user" ? "Mark (trainer)" : `${examMA.who} (peer)`}</div>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: m.role === "user" ? SPEAKER.mark.color : SPEAKER.peer.color, marginBottom: 2 }}>{m.role === "user" ? "Mark (trainer)" : `${examMA.who || "Peer"}`}</div>
                               <div style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{m.content}</div>
                             </div>
                           </div>
@@ -4342,7 +4432,7 @@ PROGRESS I'VE NOTICED:
                         {examMA.debriefMessages.map((m, i) => (
                           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 6 }}>
                             <div style={{ maxWidth: "85%", padding: "8px 12px", borderRadius: 10, background: m.role === "user" ? "rgba(208,96,96,0.08)" : "rgba(224,120,48,0.06)", border: `1px solid ${m.role === "user" ? "rgba(208,96,96,0.15)" : "rgba(224,120,48,0.12)"}` }}>
-                              <div style={{ fontSize: 10, fontWeight: 600, color: m.role === "user" ? "#d06060" : "#e07830", marginBottom: 2 }}>{m.role === "user" ? "Mark" : "Examiner"}</div>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: m.role === "user" ? SPEAKER.mark.color : SPEAKER.examiner.color, marginBottom: 2 }}>{m.role === "user" ? "Mark" : "Examiner"}</div>
                               <div style={{ fontSize: 13, color: "#d0d8e0", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{m.content}</div>
                             </div>
                           </div>

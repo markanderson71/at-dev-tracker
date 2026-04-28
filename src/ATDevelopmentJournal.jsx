@@ -2605,14 +2605,28 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
                   {/* Summary display */}
                   {s.summary && (() => {
-                    let parsed = null;
-                    parsed = parseSummary(s.summary)
+                    let parsed = parseSummary(s.summary);
+                    // If parseSummary returned an object with raw but no scores, try harder
+                    if (parsed && !parsed.scores && parsed.raw) {
+                      const retry = parseAIJson(parsed.raw);
+                      if (retry?.scores) parsed = retry;
+                    }
                     if (!parsed || !parsed.scores) {
-                      return (
-                        <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(192,96,160,0.04)", border: "1px solid rgba(192,96,160,0.1)", fontSize: 13, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                          {typeof s.summary === "string" ? s.summary : JSON.stringify(s.summary)}
+                      // Clean fallback — strip JSON artifacts for readable display
+                      const raw = typeof s.summary === "string" ? s.summary : JSON.stringify(s.summary, null, 2);
+                      const cleaned = raw
+                        .replace(/^\{|\}$/g, "")
+                        .replace(/"scores"\s*:\s*\{[^}]*\},?/g, "")
+                        .replace(/"(\w+)":/g, "\n$1:")
+                        .replace(/[[\]"]/g, "")
+                        .replace(/,\s*$/gm, "")
+                        .trim();
+                      return cleaned ? (
+                        <div style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(192,96,160,0.04)", border: "1px solid rgba(192,96,160,0.1)", fontSize: 12, color: "#d0d8e0", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                          {cleaned}
+                          <div style={{ fontSize: 10, color: "#4d6888", marginTop: 4 }}>Scores not extracted — use Rescore button</div>
                         </div>
-                      );
+                      ) : null;
                     }
                     const scoreColor = (v) => v >= 4 ? "#28a858" : v >= 3 ? "#e07830" : "#e05028";
                     return (
@@ -3317,6 +3331,14 @@ PROGRESS I'VE NOTICED:
               </Card>
             ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
               let aiScores = parseSummary(s.summary);
+              // If parseSummary returned raw but no scores, try harder
+              if (aiScores && !aiScores.scores && aiScores.raw) {
+                const retry = parseAIJson(aiScores.raw);
+                if (retry?.scores) aiScores = retry;
+              }
+              if (s.summary && (!aiScores || !aiScores.scores)) {
+                console.log("Summary parse failed for", s.id, "— raw type:", typeof s.summary, "— first 200:", String(s.summary).slice(0, 200));
+              }
               const scoreColor = (v) => v >= 4 ? "#28a858" : v >= 3 ? "#e07830" : "#e05028";
               const mentorFeedback = s.mentorFeedback || [];
               const didWell = aiScores?.did_well || aiScores?.strengths || [];

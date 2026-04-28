@@ -1314,114 +1314,182 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
   // ── Load data ──────────────────────────────────────────
   useEffect(() => {
-    console.log("AT Journal init — loading data through Vercel proxy");
+    console.log("AT Journal init — loading from 3 tabs");
     async function loadAll() {
       try {
-        // Load journal entries
-        const rows = await apiGet("JournalEntries");
-        // Trim all IDs to handle spreadsheet whitespace
-        rows.forEach(r => { if (r.id) r.id = r.id.trim(); });
-        console.log("Loaded rows:", rows.length, "ids:", rows.slice(0, 10).map(r => r.id));
-        if (rows.length === 0) { setApiStatus("error"); }
+        // Load all 3 tabs in parallel
+        const [journalRows, configRows, maRows] = await Promise.all([
+          apiGet("Journal"),
+          apiGet("Config"),
+          apiGet("MASessions"),
+        ]);
+
+        // Determine if new tabs exist or need fallback to JournalEntries
+        const hasNewTabs = configRows.length > 0 || maRows.length > 0;
+        let fallbackRows = [];
+        if (!hasNewTabs) {
+          console.log("New tabs empty — loading from legacy JournalEntries");
+          fallbackRows = await apiGet("JournalEntries");
+          fallbackRows.forEach(r => { if (r.id) r.id = r.id.trim(); });
+        }
+
+        const allJournalRows = journalRows.length > 0 ? journalRows : fallbackRows;
+        const allConfigRows = configRows.length > 0 ? configRows : fallbackRows;
+        const allMaRows = maRows.length > 0 ? maRows : fallbackRows;
+
+        allJournalRows.forEach(r => { if (r.id) r.id = r.id.trim(); });
+        allConfigRows.forEach(r => { if (r.id) r.id = r.id.trim(); });
+        allMaRows.forEach(r => { if (r.id) r.id = r.id.trim(); });
+
+        const totalRows = allJournalRows.length + allConfigRows.length + allMaRows.length;
+        console.log("Loaded rows — Journal:", allJournalRows.length, "Config:", allConfigRows.length, "MASessions:", allMaRows.length);
+        if (totalRows === 0) { setApiStatus("error"); }
         else { setApiStatus("connected"); }
-        const parsed = rows.filter(r => {
+
+        // ── Parse Journal Entries ──
+        const parsed = allJournalRows.filter(r => {
           const id = (r.id || "").trim();
           if (id.startsWith("_")) return false;
+          if (id.startsWith("ma_")) return false;
           if (id) return true;
           if (r.date || r.whatISaw || r.context) return true;
           return false;
         }).map(r => {
           r.id = (r.id || "").trim();
-          if (!r.id) r.id = uid(); // assign id to entries missing one
+          if (!r.id) r.id = uid();
           let connectionTags = [];
           let themeIds = [];
           let mentorPulse = {};
           let mentorComments = [];
-          try { connectionTags = r.connectionTags ? JSON.parse(r.connectionTags) : []; } catch(e) { console.warn("Bad connectionTags for", r.id, r.connectionTags); }
-          try { themeIds = r.themeIds ? JSON.parse(r.themeIds) : []; } catch(e) { console.warn("Bad themeIds for", r.id); }
-          try { mentorPulse = r.mentorPulse ? JSON.parse(r.mentorPulse) : {}; } catch(e) { console.warn("Bad mentorPulse for", r.id); }
-          try { mentorComments = r.mentorComments ? JSON.parse(r.mentorComments) : []; } catch(e) { console.warn("Bad mentorComments for", r.id); }
+          try { connectionTags = r.connectionTags ? JSON.parse(r.connectionTags) : []; } catch(e) {}
+          try { themeIds = r.themeIds ? JSON.parse(r.themeIds) : []; } catch(e) {}
+          try { mentorPulse = r.mentorPulse ? JSON.parse(r.mentorPulse) : {}; } catch(e) {}
+          try { mentorComments = r.mentorComments ? JSON.parse(r.mentorComments) : []; } catch(e) {}
           return { ...r, connectionTags, themeIds, mentorPulse, mentorComments };
         });
         console.log("Parsed entries:", parsed.length);
         setEntries(parsed);
         parsed.forEach(e => savedIdsRef.current.add(e.id));
 
-        // Load themes
-        const themeRow = rows.find(r => r.id === "_THEMES");
-        if (themeRow && themeRow.data) {
-          try { setThemes(JSON.parse(themeRow.data)); } catch(e) {}
-        }
+        // ── Parse Config ──
+        const findConfig = (id) => allConfigRows.find(r => r.id === id);
 
-        // Load checkpoints
-        const cpRow = rows.find(r => r.id === "_CHECKPOINTS");
-        if (cpRow && cpRow.data) {
-          try { setCheckpoints(JSON.parse(cpRow.data)); } catch(e) {}
-        }
+        const themeRow = findConfig("_THEMES");
+        if (themeRow?.data) { try { setThemes(JSON.parse(themeRow.data)); } catch(e) {} }
 
-        // Load mentor coaching notes for AI
-        const cnRow = rows.find(r => r.id === "_COACH_NOTES");
-        if (cnRow && cnRow.data) {
-          try { setMentorCoachNotes(JSON.parse(cnRow.data)); } catch(e) {}
-        }
+        const cpRow = findConfig("_CHECKPOINTS");
+        if (cpRow?.data) { try { setCheckpoints(JSON.parse(cpRow.data)); } catch(e) {} }
 
-        // Load mentor development assessments
-        const maRow2 = rows.find(r => r.id === "_MENTOR_ASSESSMENTS");
-        if (maRow2 && maRow2.data) {
-          try { setMentorAssessments(JSON.parse(maRow2.data)); } catch(e) {}
-        }
+        const cnRow = findConfig("_COACH_NOTES");
+        if (cnRow?.data) { try { setMentorCoachNotes(JSON.parse(cnRow.data)); } catch(e) {} }
 
-        // Load reference materials
-        const rmRow = rows.find(r => r.id === "_REFERENCE_MATERIALS");
-        if (rmRow && rmRow.data) {
-          setReferenceMaterials(rmRow.data);
-        }
+        const maRow2 = findConfig("_MENTOR_ASSESSMENTS");
+        if (maRow2?.data) { try { setMentorAssessments(JSON.parse(maRow2.data)); } catch(e) {} }
 
-        // Load MA session transcripts — individual rows (ma_SESSIONID) with fallback to legacy _MA_SESSIONS
-        const maRows = rows.filter(r => r.id?.startsWith("ma_"));
-        if (maRows.length > 0) {
-          const sessions = maRows.map(r => {
-            try { return JSON.parse(r.data); } catch(e) { return null; }
+        const rmRow = findConfig("_REFERENCE_MATERIALS");
+        if (rmRow?.data) { setReferenceMaterials(rmRow.data); }
+
+        const vidRow = findConfig("_VIDEOS");
+        if (vidRow?.data) { try { setVideos(JSON.parse(vidRow.data)); } catch(e) {} }
+
+        const cfRow = findConfig("_CLINIC_FEEDBACK");
+        if (cfRow?.data) { try { setClinicFeedback(JSON.parse(cfRow.data)); } catch(e) {} }
+
+        // ── Parse MA Sessions ──
+        const maSessionRows = allMaRows.filter(r => r.id?.startsWith("ma_"));
+        if (maSessionRows.length > 0) {
+          const sessions = maSessionRows.map(r => {
+            // Try proper columns first, fall back to JSON blob
+            if (r.date || r.type || r.transcript) {
+              // Proper column format
+              let sections = {}, mentorFeedback = [];
+              try { sections = r.sections ? JSON.parse(r.sections) : {}; } catch(e) {}
+              try { mentorFeedback = r.mentorFeedback ? JSON.parse(r.mentorFeedback) : []; } catch(e) {}
+              return {
+                id: (r.id || "").replace(/^ma_/, ""),
+                date: r.date || "",
+                type: r.type || r.context || "",
+                context: r.context || r.type || "",
+                who: r.who || "",
+                activity: r.activity || "",
+                conditions: r.conditions || "",
+                videoUrl: r.videoUrl || "",
+                videoSkier: r.videoSkier || "",
+                videoTime: r.videoTime || "",
+                transcript: r.transcript || "",
+                sections,
+                summary: r.summary || "",
+                notes: r.notes || "",
+                mentorFeedback,
+              };
+            }
+            // Legacy JSON blob format
+            try {
+              const parsed = JSON.parse(r.data);
+              return { ...parsed, id: parsed.id || (r.id || "").replace(/^ma_/, "") };
+            } catch(e) { return null; }
           }).filter(Boolean);
-          console.log("Loaded", sessions.length, "MA sessions from individual rows");
+          console.log("Loaded", sessions.length, "MA sessions from MASessions tab");
           setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
         } else {
-          // Legacy: load from single _MA_SESSIONS row
-          const maRow = rows.find(r => r.id === "_MA_SESSIONS");
-          if (maRow && maRow.data) {
-            try {
-              const legacy = JSON.parse(maRow.data);
-              console.log("Loaded", legacy.length, "MA sessions from legacy _MA_SESSIONS row — will migrate on next save");
-              setMaSessions(legacy);
-              // Migrate: save each session to its own row
-              for (const session of legacy) {
-                apiCreate("JournalEntries", { id: `ma_${session.id}`, data: JSON.stringify(session) });
-              }
-            } catch(e) {}
+          // Legacy: single _MA_SESSIONS row or ma_* rows in JournalEntries
+          const legacyMaRows = allConfigRows.filter(r => r.id?.startsWith("ma_"));
+          if (legacyMaRows.length > 0) {
+            const sessions = legacyMaRows.map(r => {
+              try { return JSON.parse(r.data); } catch(e) { return null; }
+            }).filter(Boolean);
+            console.log("Migrating", sessions.length, "MA sessions from JournalEntries ma_* rows to MASessions tab");
+            setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+            // Migrate to new tab
+            for (const session of sessions) {
+              saveMaSession(session);
+            }
+          } else {
+            const legacyMA = allConfigRows.find(r => r.id === "_MA_SESSIONS");
+            if (legacyMA?.data) {
+              try {
+                const legacy = JSON.parse(legacyMA.data);
+                console.log("Migrating", legacy.length, "MA sessions from legacy _MA_SESSIONS row");
+                setMaSessions(legacy);
+                for (const session of legacy) {
+                  saveMaSession(session);
+                }
+              } catch(e) {}
+            }
           }
         }
 
-        // Load videos
-        const vidRow = rows.find(r => r.id === "_VIDEOS");
-        if (vidRow && vidRow.data) {
-          try { setVideos(JSON.parse(vidRow.data)); } catch(e) {}
-        }
-
-        // Load clinic feedback
-        const cfRow = rows.find(r => r.id === "_CLINIC_FEEDBACK");
-        if (cfRow && cfRow.data) {
-          try { setClinicFeedback(JSON.parse(cfRow.data)); } catch(e) {}
+        // ── Auto-migrate to new tabs if loaded from fallback ──
+        if (!hasNewTabs && fallbackRows.length > 0) {
+          console.log("Auto-migrating data to new tab structure...");
+          // Migrate config rows
+          const configIds = ["_THEMES", "_CHECKPOINTS", "_COACH_NOTES", "_MENTOR_ASSESSMENTS", "_REFERENCE_MATERIALS", "_VIDEOS", "_CLINIC_FEEDBACK"];
+          for (const cid of configIds) {
+            const row = fallbackRows.find(r => r.id === cid);
+            if (row) apiCreate("Config", { id: row.id, data: row.data });
+          }
+          // Journal entries already in Journal tab format — create them
+          for (const entry of parsed) {
+            apiCreate("Journal", {
+              id: entry.id, date: entry.date || "", context: entry.context || "",
+              location: entry.location || "", conditions: entry.conditions || "",
+              whatISaw: entry.whatISaw || "", whatWasGoingOn: entry.whatWasGoingOn || "",
+              whatIDid: entry.whatIDid || "", whyThatApproach: entry.whyThatApproach || "",
+              whatHappened: entry.whatHappened || "", whatIdDoDifferently: entry.whatIdDoDifferently || "",
+              videoUrl: entry.videoUrl || "", connectionTags: JSON.stringify(entry.connectionTags || []),
+              themeIds: JSON.stringify(entry.themeIds || []), depthLevel: entry.depthLevel || "",
+              resourceId: entry.resourceId || "", season: entry.season || "",
+              timestamp: entry.timestamp || "", mentorPulse: JSON.stringify(entry.mentorPulse || {}),
+              mentorComments: JSON.stringify(entry.mentorComments || []),
+            });
+          }
+          console.log("Migration complete — new tabs populated");
         }
 
       } catch (e) { console.error("Failed to load:", e); setApiStatus("error"); }
       setDataLoaded(true);
     }
-    loadAll().then(() => {
-      // Check if we got any data — if not, API might not be configured
-      if (maSessions.length === 0 && entries.length === 0) {
-        console.warn("No data loaded — Vercel APPS_SCRIPT_URL may not be configured");
-      }
-    });
+    loadAll();
   }, []);
 
   // ── Helpers ────────────────────────────────────────────
@@ -1462,48 +1530,65 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
     console.log("Saving entry:", entry.id, alreadySaved ? "UPDATE" : "CREATE");
     if (alreadySaved) {
-      apiUpdate("JournalEntries", sheetRow);
+      apiUpdate("Journal", sheetRow);
     } else {
-      apiCreate("JournalEntries", sheetRow);
+      apiCreate("Journal", sheetRow);
       savedIdsRef.current.add(entry.id);
     }
   };
 
   const saveThemes = (newThemes) => {
     setThemes(newThemes);
-    apiUpdate("JournalEntries", { id: "_THEMES", data: JSON.stringify(newThemes) });
+    apiUpdate("Config", { id: "_THEMES", data: JSON.stringify(newThemes) });
   };
 
   const saveCheckpoints = (newCps) => {
     setCheckpoints(newCps);
-    apiUpdate("JournalEntries", { id: "_CHECKPOINTS", data: JSON.stringify(newCps) });
+    apiUpdate("Config", { id: "_CHECKPOINTS", data: JSON.stringify(newCps) });
   };
 
   const saveCoachNotes = (notes) => {
     setMentorCoachNotes(notes);
-    apiUpdate("JournalEntries", { id: "_COACH_NOTES", data: JSON.stringify(notes) });
+    apiUpdate("Config", { id: "_COACH_NOTES", data: JSON.stringify(notes) });
   };
 
   const saveMentorAssessments = (assessments) => {
     setMentorAssessments(assessments);
-    apiUpdate("JournalEntries", { id: "_MENTOR_ASSESSMENTS", data: JSON.stringify(assessments) });
+    apiUpdate("Config", { id: "_MENTOR_ASSESSMENTS", data: JSON.stringify(assessments) });
   };
 
   const saveReferenceMaterials = (text) => {
     setReferenceMaterials(text);
     if (saveTimerRef.current._ref) clearTimeout(saveTimerRef.current._ref);
     saveTimerRef.current._ref = setTimeout(() => {
-      apiUpdate("JournalEntries", { id: "_REFERENCE_MATERIALS", data: text });
+      apiUpdate("Config", { id: "_REFERENCE_MATERIALS", data: text });
     }, 2000);
   };
 
   const saveMaSession = async (session) => {
-    // Save individual session to its own row
+    // Save individual session to its own row with proper columns
     const rowId = `ma_${session.id}`;
-    const ok = await apiUpdate("JournalEntries", { id: rowId, data: JSON.stringify(session) });
+    const row = {
+      id: rowId,
+      date: session.date || "",
+      type: session.type || session.context || "",
+      context: session.context || session.type || "",
+      who: session.who || "",
+      activity: session.activity || "",
+      conditions: session.conditions || "",
+      videoUrl: session.videoUrl || "",
+      videoSkier: session.videoSkier || "",
+      videoTime: session.videoTime || "",
+      transcript: session.transcript || "",
+      sections: session.sections ? JSON.stringify(session.sections) : "",
+      summary: typeof session.summary === "string" ? session.summary : (session.summary ? JSON.stringify(session.summary) : ""),
+      notes: session.notes || "",
+      mentorFeedback: session.mentorFeedback ? JSON.stringify(session.mentorFeedback) : "[]",
+    };
+    console.log("Saving MA session:", rowId, "type:", row.type, "cols:", Object.keys(row).length);
+    const ok = await apiUpdate("MASessions", row);
     if (!ok) {
-      // Try create if update fails (new session)
-      const ok2 = await apiCreate("JournalEntries", { id: rowId, data: JSON.stringify(session) });
+      const ok2 = await apiCreate("MASessions", row);
       if (!ok2) {
         setSaveError("MA session failed to save — data is in memory but NOT persisted. Don't refresh.");
         console.error("MA session save failed:", session.id);
@@ -1516,7 +1601,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
   const deleteMaSession = async (sessionId) => {
     const rowId = `ma_${sessionId}`;
-    await apiDelete("JournalEntries", rowId);
+    await apiDelete("MASessions", rowId);
     setMaSessions(prev => prev.filter(s => s.id !== sessionId));
   };
 
@@ -1545,38 +1630,40 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
   const buildScoreInput = (session) => {
     const ctx = (session.context || "").toLowerCase();
+    const type = session.type || "";
     const transcript = session.transcript || "";
     const who = session.who || "unknown";
     const activity = session.activity || "unknown";
+    const conditions = session.conditions || "";
+    const sections = session.sections || {};
     const jsonReminder = `\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
 
-    // Detect type by CONTENT, not just context label
-    const hasPeerDialog = transcript.includes("PEER DIALOG:");
-    const hasPrescription = /PRESCRIPTION DELIVER[A-Z]*[^:]*:/i.test(transcript);
-    const hasPresentation = transcript.includes("PRESENTATION TO EXAMINER:");
-    const hasExaminerQA = /EXAMINER Q&A|--- EXAMINER/i.test(transcript);
-    const isATExam = ctx.includes("at ma exam") || (hasPeerDialog && hasPresentation);
-    const isWrittenMA = !isATExam && (ctx.includes("examiner q&a") || ctx.includes("free write") || (hasExaminerQA && !hasPeerDialog));
+    // Detect type by explicit type field, then context, then content
+    const hasPeerDialog = sections.peer_dialog || transcript.includes("PEER DIALOG:");
+    const hasPrescription = sections.prescription_delivery || /PRESCRIPTION DELIVER[A-Z]*[^:]*:/i.test(transcript);
+    const hasPresentation = sections.presentation || transcript.includes("PRESENTATION TO EXAMINER:");
+    const hasExaminerQA = sections.examiner_qa || /EXAMINER Q&A|--- EXAMINER/i.test(transcript);
+    const isATExam = type === "at_exam" || ctx.includes("at ma exam") || (hasPeerDialog && hasPresentation);
+    const isWrittenMA = type === "written_ma" || (!isATExam && (ctx.includes("examiner q&a") || ctx.includes("free write") || (hasExaminerQA && !hasPeerDialog)));
 
-    console.log("buildScoreInput type:", isATExam ? "AT Exam" : isWrittenMA ? "Written MA" : "Default", "| hasPeerDialog:", hasPeerDialog, "| hasPresentation:", hasPresentation, "| hasPrescription:", hasPrescription);
+    console.log("buildScoreInput type:", isATExam ? "AT Exam" : isWrittenMA ? "Written MA" : type || "Default", "| structured:", Object.keys(sections).length > 0);
 
     if (isATExam) {
-      // AT MA Exam — score only what examiner heard
-      const peerDialog = transcript.match(/PEER DIALOG:\n([\s\S]*?)(?=\n(?:PRESCRIPTION|PRESENTATION))/)?.[1]?.trim() || "";
-      const prescription = transcript.match(/PRESCRIPTION[^:]*:\n([\s\S]*?)(?=\nPRESENTATION TO EXAMINER)/)?.[1]?.trim() || "";
-      const presentation = transcript.match(/PRESENTATION TO EXAMINER:\n([\s\S]*?)(?=\nEXAMINER Q&A)/)?.[1]?.trim() || transcript.match(/PRESENTATION TO EXAMINER:\n([\s\S]*?)$/)?.[1]?.trim() || "";
-      const examinerQA = transcript.match(/EXAMINER Q&A:\n([\s\S]*?)$/)?.[1]?.trim() || "";
+      // Use structured sections if available, fall back to regex parsing
+      const peerDialog = sections.peer_dialog || transcript.match(/PEER DIALOG:\n?([\s\S]*?)(?=\n?(?:PRESCRIPTION|PRESENTATION))/)?.[1]?.trim() || "";
+      const prescription = sections.prescription_delivery || transcript.match(/PRESCRIPTION[^:]*:\n?([\s\S]*?)(?=\n?PRESENTATION TO EXAMINER)/)?.[1]?.trim() || "";
+      const presentation = sections.presentation || transcript.match(/PRESENTATION TO EXAMINER:\n?([\s\S]*?)(?=\n?EXAMINER Q&A)/)?.[1]?.trim() || transcript.match(/PRESENTATION TO EXAMINER:\n?([\s\S]*?)$/)?.[1]?.trim() || "";
+      const examinerQA = sections.examiner_qa || transcript.match(/EXAMINER Q&A:\n?([\s\S]*?)$/)?.[1]?.trim() || "";
 
-      console.log("Extracted sections — dialog:", peerDialog.length, "chars, prescription:", prescription.length, "chars, presentation:", presentation.length, "chars, Q&A:", examinerQA.length, "chars");
+      console.log("AT Exam sections — dialog:", peerDialog.length, "prescription:", prescription.length, "presentation:", presentation.length, "Q&A:", examinerQA.length, "structured:", !!sections.peer_dialog);
 
-      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}\n\nSCORING NOTES:\n- Score TWO communication audiences: (1) peer delivery connected to intent? (2) examiner presentation organized by phase?\n- Examiner questions are verifiers, not justifiers. Prompted depth can raise scores but typically caps at 4.\n- Evidence for ANY criterion can appear in ANY section. Dialog verification of intent counts toward Evaluate. Prescription delivery counts toward Communication AND Prescription. Check ALL sections when scoring each criterion.\n- Score based on the TOTAL picture across all phases.${jsonReminder}`;
+      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}${conditions ? ", " + conditions : ""}\n\nSCORING NOTES:\n- Score TWO communication audiences: (1) peer delivery connected to intent? (2) examiner presentation organized by phase?\n- Examiner questions are verifiers, not justifiers. Prompted depth can raise scores but typically caps at 4.\n- Evidence for ANY criterion can appear in ANY section. Dialog verification of intent counts toward Evaluate. Prescription delivery counts toward Communication AND Prescription. Check ALL sections when scoring each criterion.\n- Score based on the TOTAL picture across all phases.${jsonReminder}`;
     }
 
     if (isWrittenMA) {
-      // Written MA — single audience (examiner), written analysis + dialog
-      const parts = transcript.split(/---\s*EXAMINER Q&A\s*---/);
-      const analysis = (parts[0] || "").trim();
-      const dialog = (parts[1] || "").trim();
+      // Use structured sections if available, fall back to transcript parsing
+      const analysis = sections.written_analysis || transcript.split(/---\s*EXAMINER Q&A\s*---/)[0]?.trim() || transcript;
+      const dialog = sections.examiner_qa || transcript.split(/---\s*EXAMINER Q&A\s*---/)[1]?.trim() || "";
 
       return `SCORE THIS WRITTEN MA WITH EXAMINER Q&A — single audience (examiner only, no peer delivery):\n\nWRITTEN ANALYSIS:\n${analysis}\n\nEXAMINER Q&A:\n${dialog}\n\nContext: ${who}, ${activity}\n\nThis is a written MA followed by examiner dialog. There is no peer delivery — score Communication based on clarity and technical depth of the written analysis and examiner responses only.${jsonReminder}`;
     }
@@ -1595,7 +1682,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
       compare: "Compare & Contrast — Mark analyzed two skiers with similar symptoms but different root causes",
       video: "Video Analysis — Mark analyzed skiing from a video",
     };
-    const modeKey = (ctx.includes("scenario") ? "scenario" : ctx.includes("reverse") ? "reverse" : ctx.includes("compare") ? "compare" : ctx.includes("video") ? "video" : null);
+    const modeKey = type || (ctx.includes("scenario") ? "scenario" : ctx.includes("reverse") ? "reverse" : ctx.includes("compare") ? "compare" : ctx.includes("video") ? "video" : null);
     
     if (modeKey) {
       return `SCORE THIS ${modeLabels[modeKey].toUpperCase()}:\n\nThis is a practice conversation where Mark is analyzed as if presenting to an examiner. Score the quality of Mark's analysis, observations, cause-effect reasoning, and any prescriptions within the dialog. Mark's messages are labeled "Mark:" and the AI coach responses are labeled "AI:".\n\n${transcript}\n\nContext: ${who || modeLabels[modeKey]}, ${activity}\n\nSCORING NOTES:\n- Single audience — score as if Mark is presenting to an examiner\n- The AI coach may have pushed Mark deeper — evaluate Mark's responses including prompted depth\n- Score Communication based on clarity and technical depth of Mark's contributions\n- Evidence for scoring comes from Mark's messages, not the AI's${jsonReminder}`;
@@ -1669,12 +1756,12 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
   const saveVideos = (vids) => {
     setVideos(vids);
-    apiUpdate("JournalEntries", { id: "_VIDEOS", data: JSON.stringify(vids) });
+    apiUpdate("Config", { id: "_VIDEOS", data: JSON.stringify(vids) });
   };
 
   const saveClinicFeedback = (fb) => {
     setClinicFeedback(fb);
-    apiUpdate("JournalEntries", { id: "_CLINIC_FEEDBACK", data: JSON.stringify(fb) });
+    apiUpdate("Config", { id: "_CLINIC_FEEDBACK", data: JSON.stringify(fb) });
   };
 
 
@@ -2444,7 +2531,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   <div style={{ fontSize: 12, color: "#7a9ab5" }}>Record your MA practice sessions. The AI reads these to identify your analysis patterns.</div>
                 </div>
                 <button onClick={() => {
-                  const newSession = { id: uid(), date: today(), context: "", who: "", activity: "", transcript: "", notes: "", summary: "" };
+                  const newSession = { id: uid(), date: today(), type: "manual", context: "", who: "", activity: "", conditions: "", transcript: "", sections: {}, notes: "", summary: "", mentorFeedback: [] };
                   saveMaSessions([newSession, ...maSessions]);
                 }} style={{
                   padding: "5px 12px", borderRadius: 5, fontSize: 12, fontWeight: 700,
@@ -3919,11 +4006,19 @@ PROGRESS I'VE NOTICED:
                           // Auto-save to MA sessions
                           const newSession = {
                             id: uid(), date: today(),
+                            type: "written_ma",
                             context: writtenMAScenario ? "AI scenario + examiner Q&A" : "Free write + examiner Q&A",
-                            who: writtenMA.who, activity: writtenMA.activity,
+                            who: writtenMA.who, activity: writtenMA.activity, conditions: writtenMA.conditions || "",
                             transcript: writtenMA.transcript + "\n\n--- EXAMINER Q&A ---\n" + dialogText,
+                            sections: {
+                              written_analysis: writtenMA.transcript || "",
+                              examiner_qa: dialogText,
+                            },
                             notes: writtenMA.videoUrl ? `Video: ${writtenMA.videoUrl}${writtenMA.videoSkier ? ` | Skier: ${writtenMA.videoSkier}` : ""}${writtenMA.videoTime ? ` | Time: ${writtenMA.videoTime}` : ""}` : "",
                             summary: typeof parsed === "object" ? JSON.stringify(parsed) : parsed,
+                            videoUrl: writtenMA.videoUrl || "",
+                            videoSkier: writtenMA.videoSkier || "",
+                            videoTime: writtenMA.videoTime || "",
                           };
                           saveMaSessions([newSession, ...maSessions]);
                           setWrittenMALoading(false);
@@ -4480,13 +4575,25 @@ PROGRESS I'VE NOTICED:
 
                             const revCount = examMA.attempts.length - 1;
                             const newSession = {
-                              id: uid(), date: today(), context: `AT MA Exam${revCount > 0 ? " (" + revCount + " revision" + (revCount > 1 ? "s" : "") + ")" : ""}`,
-                              who: examMA.who, activity: examMA.activity,
+                              id: uid(), date: today(),
+                              type: "at_exam",
+                              context: `AT MA Exam${revCount > 0 ? " (" + revCount + " revision" + (revCount > 1 ? "s" : "") + ")" : ""}`,
+                              who: examMA.who, activity: examMA.activity, conditions: examMA.conditions,
                               transcript: fullTranscript,
+                              sections: {
+                                private_notes: examMA.observations || "",
+                                root_cause: examMA.rootCause || "",
+                                peer_dialog: dialogText,
+                                prescription_delivery: prescribeDialogText,
+                                presentation: examMA.presentation || "",
+                                examiner_qa: debriefText,
+                              },
                               notes: examMA.videoUrl ? `Video: ${examMA.videoUrl}${examMA.videoSkier ? ` | Skier: ${examMA.videoSkier}` : ""}${examMA.videoTime ? ` | Time: ${examMA.videoTime}` : ""}` : "",
                               summary: JSON.stringify(summaryObj),
                               mentorFeedback: [],
                               videoUrl: examMA.videoUrl,
+                              videoSkier: examMA.videoSkier || "",
+                              videoTime: examMA.videoTime || "",
                             };
                             saveMaSessions([newSession, ...maSessions]);
 
@@ -4578,9 +4685,12 @@ PROGRESS I'VE NOTICED:
                       const modeLabels = { scenario: "Scenario Drill", reverse: "Reverse MA", compare: "Compare & Contrast", video: "Video Analysis" };
                       const transcript = sparringMessages.map(m => `${m.role === "user" ? "Mark" : "AI"}: ${m.content}`).join("\n\n");
                       const newSession = {
-                        id: uid(), date: today(), context: modeLabels[sparringMode],
+                        id: uid(), date: today(),
+                        type: sparringMode,
+                        context: modeLabels[sparringMode],
                         who: "", activity: sparringMode, conditions: "",
-                        transcript, notes: "", summary: "", mentorFeedback: [],
+                        transcript, sections: { conversation: transcript },
+                        notes: "", summary: "", mentorFeedback: [],
                       };
                       saveMaSessions([newSession, ...maSessions]);
                       setSparringMessages([]);

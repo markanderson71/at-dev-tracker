@@ -1435,6 +1435,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
             } catch(e) { return null; }
           }).filter(Boolean);
           console.log("Loaded", sessions.length, "MA sessions from MASessions tab");
+          if (sessions[0]) console.log("First loaded session:", JSON.stringify(sessions[0]).slice(0, 300));
           setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
           // Mark all as already saved
           sessions.forEach(s => { lastSavedRef.current[s.id] = JSON.stringify(s); });
@@ -3329,7 +3330,15 @@ PROGRESS I'VE NOTICED:
                   {isCandidate ? "Practice MA in the Sparring Partner tab (Written MA mode) or add sessions in Resources." : "Mark hasn't recorded any MA sessions yet."}
                 </div>
               </Card>
-            ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
+            ) : (() => { 
+              const s0 = maSessions[0]; 
+              console.log("=== MA HISTORY DEBUG ===", maSessions.length, "sessions");
+              console.log("Session 0 keys:", Object.keys(s0 || {}));
+              console.log("Session 0 summary:", typeof s0?.summary, String(s0?.summary || "EMPTY").slice(0, 200));
+              console.log("Session 0 transcript:", typeof s0?.transcript, String(s0?.transcript || "EMPTY").slice(0, 100));
+              console.log("Session 0 id:", s0?.id, "date:", s0?.date, "type:", s0?.type, "context:", s0?.context);
+              return null; 
+            })() || [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
               let aiScores = parseSummary(s.summary);
               // If parseSummary returned raw but no scores, try harder
               if (aiScores && !aiScores.scores && aiScores.raw) {

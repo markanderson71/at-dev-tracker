@@ -1469,6 +1469,8 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         const cfRow = findConfig("_CLINIC_FEEDBACK");
         if (cfRow?.data) { try { setClinicFeedback(JSON.parse(cfRow.data)); } catch(e) {} }
 
+
+
         // ── Parse MA Sessions ──
         const maSessionRows = allMaRows.filter(r => r.id?.startsWith("ma_"));
         if (maSessionRows.length > 0) {
@@ -1692,6 +1694,17 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     const sections = session.sections || {};
     const jsonReminder = `\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
 
+    // Include mentor feedback for this session if present (corrections are ground truth)
+    const fb = session.mentorFeedback || [];
+    let mentorContext = "";
+    if (fb.length > 0) {
+      mentorContext = "\n\nMENTOR CORRECTIONS FOR THIS SESSION (ground truth — adjust scoring accordingly):\n";
+      fb.forEach(f => {
+        const name = USERS[f.userId]?.name || f.userId;
+        mentorContext += `${name}: ${f.text}\n`;
+      });
+    }
+
     // Detect type by explicit type field, then context, then content
     const hasPeerDialog = sections.peer_dialog || transcript.includes("PEER DIALOG:");
     const hasPrescription = sections.prescription_delivery || /PRESCRIPTION DELIVER[A-Z]*[^:]*:/i.test(transcript);
@@ -1711,7 +1724,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
       console.log("AT Exam sections — dialog:", peerDialog.length, "prescription:", prescription.length, "presentation:", presentation.length, "Q&A:", examinerQA.length, "structured:", !!sections.peer_dialog);
 
-      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}${conditions ? ", " + conditions : ""}\n\nSCORING NOTES:\n- Score TWO communication audiences with CORRECT content split: (1) peer gets problem, solution, how it helps — NOT the technical WHY (2) examiner gets the technical WHY, physics, diagnostic reasoning by phase\n- If the subject restates the problem and solution in their own words without being told, that's a sign of effective communication\n- If the candidate explains physics/biomechanics TO the subject, that's coaching not AT communication — do not credit for Communication\n- Examiner questions are verifiers, not justifiers. Prompted depth can raise scores but typically caps at 4.\n- Evidence for ANY criterion can appear in ANY section. Dialog verification of intent counts toward Evaluate.\n- Score based on the TOTAL picture across all phases.${jsonReminder}`;
+      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}${conditions ? ", " + conditions : ""}\n\nSCORING NOTES:\n- Score TWO communication audiences with CORRECT content split: (1) peer gets problem, solution, how it helps — NOT the technical WHY (2) examiner gets the technical WHY, physics, diagnostic reasoning by phase\n- If the subject restates the problem and solution in their own words without being told, that's a sign of effective communication\n- If the candidate explains physics/biomechanics TO the subject, that's coaching not AT communication — do not credit for Communication\n- Examiner questions are verifiers, not justifiers. Prompted depth can raise scores but typically caps at 4.\n- Evidence for ANY criterion can appear in ANY section. Dialog verification of intent counts toward Evaluate.\n- Score based on the TOTAL picture across all phases.${mentorContext}${jsonReminder}`;
     }
 
     if (isWrittenMA) {
@@ -1719,13 +1732,13 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
       const analysis = sections.written_analysis || transcript.split(/---\s*EXAMINER Q&A\s*---/)[0]?.trim() || transcript;
       const dialog = sections.examiner_qa || transcript.split(/---\s*EXAMINER Q&A\s*---/)[1]?.trim() || "";
 
-      return `SCORE THIS WRITTEN MA WITH EXAMINER Q&A — single audience (examiner only, no peer delivery):\n\nWRITTEN ANALYSIS:\n${analysis}\n\nEXAMINER Q&A:\n${dialog}\n\nContext: ${who}, ${activity}\n\nThis is a written MA followed by examiner dialog. There is no peer delivery — score Communication based on clarity and technical depth of the written analysis and examiner responses only.${jsonReminder}`;
+      return `SCORE THIS WRITTEN MA WITH EXAMINER Q&A — single audience (examiner only, no peer delivery):\n\nWRITTEN ANALYSIS:\n${analysis}\n\nEXAMINER Q&A:\n${dialog}\n\nContext: ${who}, ${activity}\n\nThis is a written MA followed by examiner dialog. There is no peer delivery — score Communication based on clarity and technical depth of the written analysis and examiner responses only.${mentorContext}${jsonReminder}`;
     }
 
     // Default — check if there's actually dialog content we should use
     if (hasPeerDialog || hasPresentation || hasPrescription) {
       // Has dialog-like content but wasn't detected as AT exam — score what's there
-      return `SCORE THIS MA SESSION — it contains dialog and/or presentation elements:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nScore based on ALL content present including any peer dialog, prescription delivery, and examiner presentation.${jsonReminder}`;
+      return `SCORE THIS MA SESSION — it contains dialog and/or presentation elements:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nScore based on ALL content present including any peer dialog, prescription delivery, and examiner presentation.${mentorContext}${jsonReminder}`;
     }
 
     // Chat-based practice modes (Scenario Drill, Reverse MA, Compare & Contrast, Video Analysis)
@@ -1739,11 +1752,11 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     const modeKey = type || (ctx.includes("scenario") ? "scenario" : ctx.includes("reverse") ? "reverse" : ctx.includes("compare") ? "compare" : ctx.includes("video") ? "video" : null);
     
     if (modeKey) {
-      return `SCORE THIS ${modeLabels[modeKey].toUpperCase()}:\n\nThis is a practice conversation where Mark is analyzed as if presenting to an examiner. Score the quality of Mark's analysis, observations, cause-effect reasoning, and any prescriptions within the dialog. Mark's messages are labeled "Mark:" and the AI coach responses are labeled "AI:".\n\n${transcript}\n\nContext: ${who || modeLabels[modeKey]}, ${activity}\n\nSCORING NOTES:\n- Single audience — score as if Mark is presenting to an examiner\n- The AI coach may have pushed Mark deeper — evaluate Mark's responses including prompted depth\n- Score Communication based on clarity and technical depth of Mark's contributions\n- Evidence for scoring comes from Mark's messages, not the AI's${jsonReminder}`;
+      return `SCORE THIS ${modeLabels[modeKey].toUpperCase()}:\n\nThis is a practice conversation where Mark is analyzed as if presenting to an examiner. Score the quality of Mark's analysis, observations, cause-effect reasoning, and any prescriptions within the dialog. Mark's messages are labeled "Mark:" and the AI coach responses are labeled "AI:".\n\n${transcript}\n\nContext: ${who || modeLabels[modeKey]}, ${activity}\n\nSCORING NOTES:\n- Single audience — score as if Mark is presenting to an examiner\n- The AI coach may have pushed Mark deeper — evaluate Mark's responses including prompted depth\n- Score Communication based on clarity and technical depth of Mark's contributions\n- Evidence for scoring comes from Mark's messages, not the AI's${mentorContext}${jsonReminder}`;
     }
 
     // True default — basic MA observation/analysis
-    return `SCORE THIS MA SESSION:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nScore based on the quality of the observation, analysis, and any prescription provided. Score Communication based on clarity and organization.${jsonReminder}`;
+    return `SCORE THIS MA SESSION:\n\n${transcript}\n\nContext: ${who}, ${activity}\n\nScore based on the quality of the observation, analysis, and any prescription provided. Score Communication based on clarity and organization.${mentorContext}${jsonReminder}`;
   };
 
   // Lean prompt for scoring — only includes what the scorer needs
@@ -1762,6 +1775,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         if (a.progress) prompt += `\n  Progress noticed: ${a.progress}`;
       });
     }
+
 
     // Filtered reference materials — only sections relevant to MA scoring
     if (referenceMaterials.trim()) {
@@ -1801,6 +1815,8 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     setClinicFeedback(fb);
     apiUpsert("Config", { id: "_CLINIC_FEEDBACK", data: JSON.stringify(fb) });
   };
+
+
 
 
   // Build enhanced system prompt with all context layers
@@ -3179,6 +3195,7 @@ PROGRESS I'VE NOTICED:
                 <div style={{ fontSize: 14, color: "#3a5068", marginTop: 4 }}>Your mentors will add their development assessments here.</div>
               </Card>
             )}
+
           </>
         )}
 

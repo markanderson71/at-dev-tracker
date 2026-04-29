@@ -539,9 +539,11 @@ Chris asks three questions for each criterion: Does the candidate SEE it? Does i
 
 PROMPTED vs UNPROMPTED — this affects where on the scale it lands:
 - If Mark demonstrates a concept WITHOUT the examiner asking about it — it is genuinely present. Depending on consistency and depth, this could be 4, 5, or 6.
-- If Mark demonstrates a concept only AFTER the examiner probes for it — it is present but needed prompting. This typically caps at 4. The skill exists but it's not yet autonomous — Mark needed the examiner to draw it out.
+- If Mark demonstrates a concept only AFTER the examiner probes for it — distinguish two types:
+  - PROMPTED CREATION: Mark didn't show it at all, examiner had to surface it. This caps at 4.
+  - PROMPTED REFINEMENT: Mark showed it unprompted, examiner pushed deeper, Mark refined or extended. This is ADDITIVE — score based on the unprompted work, the refinement shows additional depth and does NOT lower the score.
 - If the examiner probes and Mark STILL can't demonstrate it — it's not present at that level. The prompting revealed a gap.
-- Unprompted + consistent = 5-6 (autonomous). Prompted + accurate = 4 (associative, at standard). Inconsistent whether prompted or not = 3 (associative, developing).
+- Unprompted + consistent = 5-6 (autonomous). Prompted creation + accurate = caps at 4. Prompted refinement = does not lower the unprompted score. Inconsistent whether prompted or not = 3 (associative, developing).
 
 KEY: The difference between 3 and 4 is CONSISTENCY, not perfection.
 - A candidate who demonstrates AT-level analysis once but reverts to L3 thinking elsewhere = 3
@@ -615,6 +617,17 @@ Examiner questions are verifiers, not justifiers. They serve multiple purposes:
 Score based on HOW MARK RESPONDS, not on the fact that questions were asked.
 If Mark demonstrates depth in Q&A that he didn't present unprompted — this is PROMPTED demonstration. It shows the skill is present but not yet autonomous. This can raise a 2 to a 3, or a 3 to a 4, but typically not higher than 4 since it required prompting.
 If Mark presented it unprompted AND deepens it further in Q&A — that confirms a 4+ score.
+
+CRITICAL SCORING ERRORS TO AVOID:
+
+1. OPPORTUNITY DOES NOT LOWER THE SCORE:
+Every score level has areas to improve — even a 5 has growth areas. The "opportunity" and "gaps" fields describe WHERE TO FOCUS NEXT, not evidence against the current score. Score based on what IS present, then describe what's next. A 4 with opportunities to grow is still a 4.
+
+2. PROMPTED REFINEMENT vs PROMPTED CREATION:
+If the unprompted presentation demonstrates AT-level work and the examiner Q&A pushes deeper, causing Mark to REFINE his position — score based on the UNPROMPTED work. The Q&A refinement is ADDITIVE — it shows more depth exists, it does not invalidate the initial presentation. Only score as "prompted" when the examiner had to SURFACE something Mark didn't show at all. If Mark presented a cascade and the examiner asked him to name the primary fundamental and he did — that's refinement, not creation. Score the presentation as unprompted AT-level work.
+
+3. LOCATE GAPS ON THE SCALE — DO NOT USE NEXT-LEVEL GAPS TO LOWER CURRENT SCORE:
+When you identify a gap, ask: is this the gap between 3 and 4, or between 4 and 5? "Didn't complete the full sidecut-to-groove physics chain when the examiner probed three levels deep" is a gap between 4 and 5 — it does NOT make the score a 3. "Didn't describe by phase at all" is a gap between 2 and 3. Always locate the gap on the scale before using it to determine a score.
 
 Score THIS session in isolation based on the evidence presented. Chris's mentor assessment is the ground truth for calibration — use it to understand where Mark is in his development, but score based on what you see in THIS session.
 

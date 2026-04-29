@@ -599,14 +599,25 @@ Biomechanics/Physics:
 IMPORTANT: Examiners understand physics — they are listening for whether the physics is DRIVING the analysis accurately, not whether the candidate can lecture on physics. Implied understanding through correct application scores the same as explicit naming. An examiner drills to explicit physics to VERIFY depth, not because naming it is required.
 
 Communication:
-- 2: Delivers information but disorganized or single-audience
-- 3: Organized presentation, connects to subject's focus, clear to examiner. Two audiences are present.
-- 4: All of 3 PLUS distinct two-audience delivery where WHAT goes to each audience is appropriate:
-  PEER gets: the problem, the solution, how it helps them — connected to their intent and their language. The peer should NOT get the technical WHY — if the candidate explains biomechanics/physics to the peer, that's coaching, not AT-level MA communication. The strongest evidence of effective peer delivery is when the subject restates the problem and solution in their own words without being explicitly told — this demonstrates the communication landed.
-  EXAMINER gets: the technical WHY — physics, biomechanics, diagnostic reasoning. This is expert-to-expert communication. Phase-by-phase organization is ONE way to be clear but NOT a requirement for a 4 — if the examiner gets a clear, complete picture from concise delivery, that IS effective communication regardless of format. The examiner does not need to be explicitly told every detail — if the picture is clear enough that the examiner can connect the dots, that's concise expert communication.
-  Concise delivery that lands is HIGHER than verbose delivery that covers everything. Efficiency is a sign of higher-level thinking.
-  If the peer can state the problem and solution and how it helps in their own words without being explicitly told — that is a 4 on peer communication regardless of whether the candidate narrates the strategy.
-  Metacognition about dialog design does not need to be stated unless the examiner asks. The behavior IS the evidence.
+- 2: Delivers information but disorganized or unclear
+- 3: Organized presentation, connects to subject's focus, clear to examiner
+- 4: Depends on MA type:
+
+  FOR AT MA EXAM (has peer dialog): Two-audience delivery where WHAT goes to each audience is appropriate:
+    PEER gets: the problem, the solution, how it helps them — connected to their intent and their language. The peer should NOT get the technical WHY — if the candidate explains biomechanics/physics to the peer, that's coaching, not AT-level MA communication. The strongest evidence of effective peer delivery is when the subject restates the problem and solution in their own words without being explicitly told.
+    EXAMINER gets: the technical WHY — physics, biomechanics, diagnostic reasoning. Expert-to-expert communication.
+
+  FOR ALL OTHER MA TYPES (Written MA, Scenario, Reverse, Compare, Video): Single audience — examiner only. There is NO peer dialog in these formats. Do NOT penalize for missing peer delivery — it doesn't exist. Score Communication on:
+    - Clarity and organization of the analysis
+    - Technical depth appropriate for expert-to-expert
+    - Efficient, concise delivery that gives the examiner a clear picture
+    - A 4 is a clear, well-organized, technically deep presentation to the examiner
+
+  FOR ALL TYPES:
+  - Phase-by-phase organization is ONE way to be clear but NOT a requirement for a 4
+  - Concise delivery that lands is HIGHER than verbose delivery that covers everything
+  - The examiner does not need to be explicitly told every detail — if the picture is clear enough that the examiner can connect the dots, that's concise expert communication
+  - Metacognition about dialog design does not need to be stated unless the examiner asks. The behavior IS the evidence.
 
 HOW TO SCORE THE EXAMINER Q&A:
 Examiner questions are verifiers, not justifiers. They serve multiple purposes:
@@ -1745,7 +1756,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
       const analysis = sections.written_analysis || transcript.split(/---\s*EXAMINER Q&A\s*---/)[0]?.trim() || transcript;
       const dialog = sections.examiner_qa || transcript.split(/---\s*EXAMINER Q&A\s*---/)[1]?.trim() || "";
 
-      return `SCORE THIS WRITTEN MA WITH EXAMINER Q&A — single audience (examiner only, no peer delivery):\n\nWRITTEN ANALYSIS:\n${analysis}\n\nEXAMINER Q&A:\n${dialog}\n\nContext: ${who}, ${activity}\n\nThis is a written MA followed by examiner dialog. There is no peer delivery — score Communication based on clarity and technical depth of the written analysis and examiner responses only.${mentorContext}${jsonReminder}`;
+      return `SCORE THIS WRITTEN MA WITH EXAMINER Q&A — single audience (examiner only, no peer delivery):\n\nWRITTEN ANALYSIS:\n${analysis}\n\nEXAMINER Q&A:\n${dialog}\n\nContext: ${who}, ${activity}${conditions ? ", " + conditions : ""}\n\nSCORING NOTES:\n- There is NO peer dialog in this format — do NOT penalize Communication for missing peer delivery\n- Score Communication ONLY on clarity, organization, and technical depth of the written analysis and examiner responses\n- A clear, well-organized, technically deep presentation to the examiner IS a 4 on Communication for this format\n- Evidence for ANY criterion can appear in ANY section${mentorContext}${jsonReminder}`;
     }
 
     // Default — check if there's actually dialog content we should use
@@ -1765,7 +1776,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     const modeKey = type || (ctx.includes("scenario") ? "scenario" : ctx.includes("reverse") ? "reverse" : ctx.includes("compare") ? "compare" : ctx.includes("video") ? "video" : null);
     
     if (modeKey) {
-      return `SCORE THIS ${modeLabels[modeKey].toUpperCase()}:\n\nThis is a practice conversation where Mark is analyzed as if presenting to an examiner. Score the quality of Mark's analysis, observations, cause-effect reasoning, and any prescriptions within the dialog. Mark's messages are labeled "Mark:" and the AI coach responses are labeled "AI:".\n\n${transcript}\n\nContext: ${who || modeLabels[modeKey]}, ${activity}\n\nSCORING NOTES:\n- Single audience — score as if Mark is presenting to an examiner\n- The AI coach may have pushed Mark deeper — evaluate Mark's responses including prompted depth\n- Score Communication based on clarity and technical depth of Mark's contributions\n- Evidence for scoring comes from Mark's messages, not the AI's${mentorContext}${jsonReminder}`;
+      return `SCORE THIS ${modeLabels[modeKey].toUpperCase()}:\n\nThis is a practice conversation where Mark is analyzed as if presenting to an examiner. Score the quality of Mark's analysis, observations, cause-effect reasoning, and any prescriptions within the dialog. Mark's messages are labeled "Mark:" and the AI coach responses are labeled "AI:".\n\n${transcript}\n\nContext: ${who || modeLabels[modeKey]}, ${activity}\n\nSCORING NOTES:\n- Single audience — score as if Mark is presenting to an examiner\n- There is NO peer dialog in this format — do NOT penalize Communication for missing peer delivery\n- Score Communication on clarity and technical depth of Mark's contributions only — a clear, technically deep analysis IS a 4 on Communication for this format\n- The AI coach may have pushed Mark deeper — evaluate Mark's responses including prompted depth\n- Evidence for scoring comes from Mark's messages, not the AI's${mentorContext}${jsonReminder}`;
     }
 
     // True default — basic MA observation/analysis

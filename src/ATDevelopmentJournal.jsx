@@ -1800,6 +1800,19 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
       });
     }
 
+    // Recent mentor per-session feedback (qualitative calibration context)
+    const recentMentorFb = maSessions
+      .flatMap(s => (s.mentorFeedback || []).map(f => ({ ...f, date: s.date, activity: s.activity, context: s.context })))
+      .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""))
+      .slice(0, 4);
+    if (recentMentorFb.length > 0) {
+      prompt += "\n\n=== RECENT MENTOR FEEDBACK ON MARK'S SESSIONS (qualitative context, not scoring instructions) ===\n";
+      recentMentorFb.forEach(f => {
+        const name = USERS[f.userId]?.name || f.userId;
+        prompt += `${name} (${f.date || ""}, ${f.context || f.activity || ""}): ${f.text}\n`;
+      });
+    }
+
 
     // Filtered reference materials — only sections relevant to MA scoring
     if (referenceMaterials.trim()) {

@@ -501,7 +501,7 @@ Score against these criteria:
 - Communication: Two audiences — (1) Peer: problem, solution, how it helps — connected to their intent. NOT the technical WHY (that's coaching). Effective delivery = subject restates in their own words without being told. (2) Examiner: the technical WHY — physics, diagnostic reasoning, organized by phase with DIRT precision.
 
 Respond ONLY in this JSON format (no markdown, no backticks):
-{"skills_identified":["list of skills mentioned"],"cause_effect":"description of cause-effect relationships identified","root_cause":"what they identified as root cause","prescription":"what they prescribed","mentor_corrections":"key corrections from mentor if present","strengths":["list of strengths"],"gaps":["list of gaps/blind spots"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["specific things done well"],"opportunity":["specific areas to improve"],"key_learning":"the single most important thing to work on"}`;
+{"did_well":["specific things done well"],"opportunity":["areas to focus NEXT"],"score_rationale":{"describe":"evidence and which level definition it meets","cause_effect":"evidence","evaluate":"evidence","prescription":"evidence","biomechanics":"evidence","communication":"evidence"},"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"key_learning":"the single most important thing to work on"}`;
 
 const MA_DIALOG_SYSTEM = `${AT_COACH_SYSTEM}
 
@@ -642,8 +642,10 @@ When you identify a gap, ask: is this the gap between 3 and 4, or between 4 and 
 
 Score THIS session in isolation based on the evidence presented. Chris's mentor assessment is the ground truth for calibration — use it to understand where Mark is in his development, but score based on what you see in THIS session.
 
-Respond ONLY in JSON (no markdown, no backticks):
-{"skills_identified":["list"],"cause_effect":"description","root_cause":"what identified","prescription":"what prescribed","mentor_corrections":"corrections if present","strengths":["list"],"gaps":["list"],"did_well":["specific things done well"],"opportunity":["specific areas to improve"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"key_learning":"single most important focus"}`;
+Respond ONLY in JSON (no markdown, no backticks).
+IMPORTANT: For each criterion, write the rationale FIRST explaining what evidence you see and which level it meets, THEN give the score. The rationale must reference the specific 2/3/4 definition and explain why the evidence meets that level and not the one below.
+
+{"did_well":["specific things done well"],"opportunity":["specific areas to improve — these describe where to focus NEXT, not reasons to lower the score"],"score_rationale":{"describe":"[What evidence: e.g. DIRT used, inside/outside distinguished, phase-specific. Which level definition this meets and why. If giving a 3, explain specifically what L3-level element is MISSING — not what AT-level element could be added.]","cause_effect":"[same format]","evaluate":"[same format]","prescription":"[same format]","biomechanics":"[same format]","communication":"[same format]"},"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"key_learning":"single most important focus"}`;
 
 const MA_PEER_DIALOG_SYSTEM = `You are acting as a ski instructor PEER being observed and questioned by an Alpine Trainer candidate (Mark) during an MA practice exam. Mark has watched you ski and is now asking you questions to verify his observations.
 
@@ -1716,7 +1718,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     const activity = session.activity || "unknown";
     const conditions = session.conditions || "";
     const sections = session.sections || {};
-    const jsonReminder = `\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+    const jsonReminder = `\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). For each criterion, write rationale FIRST explaining what evidence meets which level definition, THEN score. If giving a 3, explain what L3-level element is MISSING — not what AT-level element could be added.\n{"did_well":["list"],"opportunity":["areas to focus NEXT, not reasons to lower score"],"score_rationale":{"describe":"evidence and which level definition it meets","cause_effect":"evidence","evaluate":"evidence","prescription":"evidence","biomechanics":"evidence","communication":"evidence"},"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"key_learning":"text"}`;
 
     // Include mentor feedback for this session if present (corrections are ground truth)
     const fb = session.mentorFeedback || [];
@@ -3613,6 +3615,23 @@ PROGRESS I'VE NOTICED:
                             ))}
                           </div>
                         )}
+                        {aiScores?.score_rationale && (
+                          <details style={{ marginBottom: 8 }}>
+                            <summary style={{ fontSize: 10, color: "#7a9ab5", cursor: "pointer" }}>Score rationale</summary>
+                            <div style={{ padding: "6px 8px", borderRadius: 4, background: "rgba(255,255,255,0.02)", marginTop: 4 }}>
+                              {[{ key: "describe", label: "Describe" }, { key: "cause_effect", label: "Cause/Effect" }, { key: "evaluate", label: "Evaluate" }, { key: "prescription", label: "Prescription" }, { key: "biomechanics", label: "Bio/Physics" }, { key: "communication", label: "Comm" }].map(sc => {
+                                const rationale = aiScores.score_rationale[sc.key];
+                                if (!rationale) return null;
+                                return (
+                                  <div key={sc.key} style={{ marginBottom: 6 }}>
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: scoreColor(aiScores.scores?.[sc.key] || 0) }}>{sc.label} ({aiScores.scores?.[sc.key] || "—"}): </span>
+                                    <span style={{ fontSize: 11, color: "#b0b8c0", lineHeight: 1.4 }}>{rationale}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </details>
+                        )}
                         {didWell?.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#28a858" }}>WHAT YOU DID WELL: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{didWell.join(" · ")}</span></div>}
                         {opportunity?.length > 0 && <div style={{ marginBottom: 4 }}><span style={{ fontSize: 10, fontWeight: 700, color: "#e07830" }}>OPPORTUNITY TO IMPROVE: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{opportunity.join(" · ")}</span></div>}
                         {aiScores?.key_learning && <div><span style={{ fontSize: 10, fontWeight: 700, color: "#e8a050" }}>KEY FOCUS: </span><span style={{ fontSize: 12, color: "#d0d8e0" }}>{aiScores.key_learning}</span></div>}
@@ -4139,7 +4158,7 @@ PROGRESS I'VE NOTICED:
                             });
                           }
 
-                          const input = `INITIAL MA:\n${writtenMA.transcript}\n\nEXAMINER DIALOG:\n${dialogText}${pastContext}\n\nContext: ${writtenMA.who || ""}, ${writtenMA.activity || ""}, ${writtenMA.conditions || ""}\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                          const input = `INITIAL MA:\n${writtenMA.transcript}\n\nEXAMINER DIALOG:\n${dialogText}${pastContext}\n\nContext: ${writtenMA.who || ""}, ${writtenMA.activity || ""}, ${writtenMA.conditions || ""}\n\nRESPOND ONLY IN JSON (no markdown, no backticks). For each criterion, write rationale FIRST explaining evidence and which level definition it meets, THEN score. If giving a 3, explain what is MISSING not what could be better.\n{"did_well":["list"],"opportunity":["next focus"],"score_rationale":{"describe":"evidence","cause_effect":"evidence","evaluate":"evidence","prescription":"evidence","biomechanics":"evidence","communication":"evidence"},"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"key_learning":"text"}`;
                           const resp = await callClaude([{ role: "user", content: input }], buildScorerPrompt(MA_TREND_SCORER_SYSTEM));
                           const parsed = parseAIJson(resp);
                           setWrittenMAResult(parsed);
@@ -4550,7 +4569,7 @@ PROGRESS I'VE NOTICED:
                             revisionContext += "Score this attempt on its own merits but note what improved from previous attempts.\n";
                           }
                           const prescribeText = (examMA.prescriptionDialog || []).map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                          const input = `SCORE ONLY WHAT THE EXAMINER HEARD:\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescribeText}\n\nMARK'S PRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nScore ONLY what the examiner heard. Do NOT consider any private notes. Evaluate: (1) Did he connect the task to the subject's intent when delivering it? (2) Did he explain the technical WHY to the examiner?\n"did_well": ["list of specific things Mark did well"]\n"opportunity": ["list of specific areas to improve"]\n\nRESPOND ONLY IN JSON (no markdown, no backticks, no explanation before or after). Use this exact structure:\n{"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["list"],"opportunity":["list"],"gaps":["list"],"key_learning":"text"}`;
+                          const input = `SCORE ONLY WHAT THE EXAMINER HEARD:\n\nPEER DIALOG (examiner observed):\n${dialogText}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescribeText}\n\nMARK'S PRESENTATION TO EXAMINER:\n${examMA.presentation}\n\nEXAMINER Q&A:\n${debriefText}${revisionContext}${pastContext}\n\nContext: ${examMA.who}, ${examMA.activity}, ${examMA.conditions}\n\nScore ONLY what the examiner heard. Do NOT consider any private notes. Evaluate: (1) Did he connect the task to the subject's intent when delivering it? (2) Did he explain the technical WHY to the examiner?\n"did_well": ["list of specific things Mark did well"]\n"opportunity": ["list of specific areas to improve"]\n\nRESPOND ONLY IN JSON (no markdown, no backticks). For each criterion, write rationale FIRST explaining evidence and which level definition it meets, THEN score. If giving a 3, explain what is MISSING not what could be better.\n{"did_well":["list"],"opportunity":["next focus"],"score_rationale":{"describe":"evidence","cause_effect":"evidence","evaluate":"evidence","prescription":"evidence","biomechanics":"evidence","communication":"evidence"},"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"key_learning":"text"}`;
                           const resp = await callClaude([{ role: "user", content: input }], buildScorerPrompt(MA_TREND_SCORER_SYSTEM));
                           const parsed = parseAIJson(resp);
 

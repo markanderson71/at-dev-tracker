@@ -589,9 +589,12 @@ Prescription:
 - 4: All of 3 PLUS includes variations, adapts to conditions, connects to subject's intent when DELIVERING to peer, explains technical WHY using physics (sidecut, forces, edging-rotary spectrum)
 
 Biomechanics/Physics:
-- 2: Uses correct terminology without explanation ("grip," "edge angles," "counter")
-- 3: Names the skills and their interactions, describes what happens mechanically
-- 4: All of 3 PLUS explains WHY at the physics level — sidecut engagement, reverse camber, centripetal forces, three-joint constraint, 65/35 separation, inclination vs angulation
+- 2: Uses terminology without connection to the analysis. Names skills ("grip," "edge angles," "counter") but the physics understanding doesn't show through the work — the cause-effect chain could be coincidentally correct without understanding WHY.
+- 3: Physics understanding is IMPLIED through accurate analysis. The cause-effect chain is physically correct, the prescription mechanically targets the right issue, the explanation of what happens at the ski/snow level makes physical sense. The candidate may not name "reverse camber" or "sidecut engagement" explicitly but DESCRIBES what those concepts do (e.g., "opposite grooves in the snow cause the convergent relationship" demonstrates sidecut understanding without naming it). The physics is DRIVING the analysis accurately — the work demonstrates the understanding.
+- 4: Physics understanding drives the analysis AND can be articulated explicitly. The candidate connects to mechanisms — what the ski does, what forces act, why the task produces change — either unprompted in the presentation or cleanly when the examiner probes. The examiner does not need to drill down to verify depth because the analysis already demonstrates it. If the examiner DOES probe, the candidate goes deeper without hesitation.
+- 5: Physics is so internalized that it naturally EXTENDS the analysis beyond what was asked. The candidate predicts consequences, connects physics to what the skier FEELS, uses conditions as a physics variable, explains why THIS task works at the mechanism level (not just "it targets edging" but HOW it changes the ski/snow interaction). The examiner hears connections they didn't ask about and doesn't need to probe — the depth is evident and adds value.
+- 6: Examiner-level physics. The candidate's analysis consistently adds insight the examiner didn't expect. Physics application is natural, fluid, and deepens every observation.
+IMPORTANT: Examiners understand physics — they are listening for whether the physics is DRIVING the analysis accurately, not whether the candidate can lecture on physics. Implied understanding through correct application scores the same as explicit naming. An examiner drills to explicit physics to VERIFY depth, not because naming it is required.
 
 Communication:
 - 2: Delivers information but disorganized or single-audience

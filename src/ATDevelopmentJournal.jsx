@@ -387,7 +387,7 @@ PUSH ON THESE AT-LEVEL REQUIREMENTS:
 7. Prescribe using IDP activities with VARIATIONS and explain WHY — connect the task to the physics of the root cause and the conditions
 8. Address all three CAP domains (cognitive: do they understand? affective: are they ready for feedback? physical: can they execute?)
 9. Consider the instructor's CERT LEVEL — how does a new hire vs L2 vs peer change your approach?
-10. CONNECT YOUR OBSERVATION TO THE SUBJECT'S INTENT — show how your observation SERVES their intent. An L3 overrides or defers. An AT connects.
+10. CONNECT YOUR OBSERVATION TO THE SUBJECT'S INTENT — show how your observation SERVES their intent. An L3 overrides or defers. An AT connects. But the subject gets the WHAT and HOW, not the technical WHY — that goes to the examiner. If you're explaining physics to the subject, that's coaching, not MA communication.
 11. Observe BOTH skis — inside and outside ski behavior, their relationship (parallel, diverging, A-frame), and what that reveals about the skill blend
 
 Mark's development themes:
@@ -498,7 +498,7 @@ Score against these criteria:
 - Evaluate: Task compliance checked? Compared to intended outcome using speed, turn shape, size, line, ski-snow interaction? Diagnostic framework applied (skill deficiency vs accuracy of use vs condition mismatch vs tactical upgrade)?
 - Prescription: IDP activity chosen? Variations? Terrain justified? Adapted to conditions? Connected to subject's intent when delivered? Technical WHY explained using physics (sidecut, forces, edging-rotary spectrum)?
 - Biomechanics/Physics: WHY at physics level? Sidecut engagement, reverse camber, centripetal forces, fore/aft through arc, three-joint constraint, 65/35 upper/lower separation, inclination vs angulation, inside/outside ski independence? A 3 names the skill. A 4 explains the physics.
-- Communication: Two audiences — (1) Peer: connected task to focus, helped see relevance (2) Examiner: organized by phase, DIRT precision, technical depth, clear cause-effect chain
+- Communication: Two audiences — (1) Peer: problem, solution, how it helps — connected to their intent. NOT the technical WHY (that's coaching). Effective delivery = subject restates in their own words without being told. (2) Examiner: the technical WHY — physics, diagnostic reasoning, organized by phase with DIRT precision.
 
 Respond ONLY in this JSON format (no markdown, no backticks):
 {"skills_identified":["list of skills mentioned"],"cause_effect":"description of cause-effect relationships identified","root_cause":"what they identified as root cause","prescription":"what they prescribed","mentor_corrections":"key corrections from mentor if present","strengths":["list of strengths"],"gaps":["list of gaps/blind spots"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"pattern_notes":"recurring patterns or tendencies observed","key_learning":"the single most important thing to work on"}`;
@@ -595,8 +595,13 @@ Biomechanics/Physics:
 
 Communication:
 - 2: Delivers information but disorganized or single-audience
-- 3: Organized presentation, connects to subject's focus, clear to examiner
-- 4: All of 3 PLUS distinct two-audience delivery (peer: connected to intent / examiner: organized by phase with DIRT precision), clean efficient AT communication style
+- 3: Organized presentation, connects to subject's focus, clear to examiner. Two audiences are present.
+- 4: All of 3 PLUS distinct two-audience delivery where WHAT goes to each audience is appropriate:
+  PEER gets: the problem, the solution, how it helps them — connected to their intent and their language. The peer should NOT get the technical WHY — if the candidate explains biomechanics/physics to the peer, that's coaching, not AT-level MA communication. The strongest evidence of effective peer delivery is when the subject restates the problem and solution in their own words without being explicitly told — this demonstrates the communication landed.
+  EXAMINER gets: the technical WHY — physics, biomechanics, diagnostic reasoning. This is expert-to-expert communication. Phase-by-phase organization is ONE way to be clear but NOT a requirement for a 4 — if the examiner gets a clear, complete picture from concise delivery, that IS effective communication regardless of format. The examiner does not need to be explicitly told every detail — if the picture is clear enough that the examiner can connect the dots, that's concise expert communication.
+  Concise delivery that lands is HIGHER than verbose delivery that covers everything. Efficiency is a sign of higher-level thinking.
+  If the peer can state the problem and solution and how it helps in their own words without being explicitly told — that is a 4 on peer communication regardless of whether the candidate narrates the strategy.
+  Metacognition about dialog design does not need to be stated unless the examiner asks. The behavior IS the evidence.
 
 HOW TO SCORE THE EXAMINER Q&A:
 Examiner questions are verifiers, not justifiers. They serve multiple purposes:
@@ -1703,7 +1708,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
       console.log("AT Exam sections — dialog:", peerDialog.length, "prescription:", prescription.length, "presentation:", presentation.length, "Q&A:", examinerQA.length, "structured:", !!sections.peer_dialog);
 
-      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}${conditions ? ", " + conditions : ""}\n\nSCORING NOTES:\n- Score TWO communication audiences: (1) peer delivery connected to intent? (2) examiner presentation organized by phase?\n- Examiner questions are verifiers, not justifiers. Prompted depth can raise scores but typically caps at 4.\n- Evidence for ANY criterion can appear in ANY section. Dialog verification of intent counts toward Evaluate. Prescription delivery counts toward Communication AND Prescription. Check ALL sections when scoring each criterion.\n- Score based on the TOTAL picture across all phases.${jsonReminder}`;
+      return `SCORE ONLY WHAT THE EXAMINER HEARD — this is a full AT MA Exam with two audiences:\n\nPEER DIALOG (examiner observed):\n${peerDialog}\n\nPRESCRIPTION DELIVERY TO PEER (examiner observed):\n${prescription}\n\nPRESENTATION TO EXAMINER:\n${presentation}\n\nEXAMINER Q&A:\n${examinerQA}\n\nContext: ${who}, ${activity}${conditions ? ", " + conditions : ""}\n\nSCORING NOTES:\n- Score TWO communication audiences with CORRECT content split: (1) peer gets problem, solution, how it helps — NOT the technical WHY (2) examiner gets the technical WHY, physics, diagnostic reasoning by phase\n- If the subject restates the problem and solution in their own words without being told, that's a sign of effective communication\n- If the candidate explains physics/biomechanics TO the subject, that's coaching not AT communication — do not credit for Communication\n- Examiner questions are verifiers, not justifiers. Prompted depth can raise scores but typically caps at 4.\n- Evidence for ANY criterion can appear in ANY section. Dialog verification of intent counts toward Evaluate.\n- Score based on the TOTAL picture across all phases.${jsonReminder}`;
     }
 
     if (isWrittenMA) {

@@ -501,7 +501,7 @@ Score against these criteria:
 - Communication: Two audiences — (1) Peer: problem, solution, how it helps — connected to their intent. NOT the technical WHY (that's coaching). Effective delivery = subject restates in their own words without being told. (2) Examiner: the technical WHY — physics, diagnostic reasoning, organized by phase with DIRT precision.
 
 Respond ONLY in this JSON format (no markdown, no backticks):
-{"skills_identified":["list of skills mentioned"],"cause_effect":"description of cause-effect relationships identified","root_cause":"what they identified as root cause","prescription":"what they prescribed","mentor_corrections":"key corrections from mentor if present","strengths":["list of strengths"],"gaps":["list of gaps/blind spots"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"pattern_notes":"recurring patterns or tendencies observed","key_learning":"the single most important thing to work on"}`;
+{"skills_identified":["list of skills mentioned"],"cause_effect":"description of cause-effect relationships identified","root_cause":"what they identified as root cause","prescription":"what they prescribed","mentor_corrections":"key corrections from mentor if present","strengths":["list of strengths"],"gaps":["list of gaps/blind spots"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"did_well":["specific things done well"],"opportunity":["specific areas to improve"],"key_learning":"the single most important thing to work on"}`;
 
 const MA_DIALOG_SYSTEM = `${AT_COACH_SYSTEM}
 
@@ -616,10 +616,10 @@ Score based on HOW MARK RESPONDS, not on the fact that questions were asked.
 If Mark demonstrates depth in Q&A that he didn't present unprompted — this is PROMPTED demonstration. It shows the skill is present but not yet autonomous. This can raise a 2 to a 3, or a 3 to a 4, but typically not higher than 4 since it required prompting.
 If Mark presented it unprompted AND deepens it further in Q&A — that confirms a 4+ score.
 
-COMPARE to previous sessions. Identify what IMPROVED, what PERSISTS as a gap, and what's NEW.
+Score THIS session in isolation based on the evidence presented. Chris's mentor assessment is the ground truth for calibration — use it to understand where Mark is in his development, but score based on what you see in THIS session.
 
 Respond ONLY in JSON (no markdown, no backticks):
-{"skills_identified":["list"],"cause_effect":"description","root_cause":"what identified","prescription":"what prescribed","mentor_corrections":"corrections if present","strengths":["list"],"gaps":["list"],"did_well":["specific things done well"],"opportunity":["specific areas to improve"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"improvements":["what got better vs previous"],"persistent_gaps":["gaps that keep appearing"],"new_observations":["new things"],"key_learning":"single most important focus"}`;
+{"skills_identified":["list"],"cause_effect":"description","root_cause":"what identified","prescription":"what prescribed","mentor_corrections":"corrections if present","strengths":["list"],"gaps":["list"],"did_well":["specific things done well"],"opportunity":["specific areas to improve"],"scores":{"describe":0,"cause_effect":0,"evaluate":0,"prescription":0,"biomechanics":0,"communication":0},"key_learning":"single most important focus"}`;
 
 const MA_PEER_DIALOG_SYSTEM = `You are acting as a ski instructor PEER being observed and questioned by an Alpine Trainer candidate (Mark) during an MA practice exam. Mark has watched you ski and is now asking you questions to verify his observations.
 
@@ -1786,22 +1786,6 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         prompt += "\n\n=== REFERENCE MATERIALS (SCORING RELEVANT) ===\n";
         prompt += filteredSections.map(s => "═══ " + s).join("\n");
       }
-    }
-
-    // Layer 5 condensed: Only recent MA scores for trend comparison (no full transcripts)
-    const recentMA = [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 4);
-    const scoredSessions = recentMA.filter(s => {
-      const p = parseSummary(s.summary);
-      return p?.scores;
-    });
-    if (scoredSessions.length > 0) {
-      prompt += "\n\n=== RECENT MA SCORES (for trend comparison) ===\n";
-      scoredSessions.forEach(s => {
-        const p = parseSummary(s.summary);
-        prompt += `[${s.date} · ${s.context}] D=${p.scores.describe} C/E=${p.scores.cause_effect} E=${p.scores.evaluate} P=${p.scores.prescription} B=${p.scores.biomechanics} Co=${p.scores.communication}`;
-        if (p.key_learning) prompt += ` · Focus: ${p.key_learning}`;
-        prompt += "\n";
-      });
     }
 
     console.log("Scorer prompt:", prompt.length, "chars vs full buildSystemPrompt would be ~65000+");

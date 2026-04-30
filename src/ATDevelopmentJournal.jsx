@@ -810,7 +810,8 @@ export default function ATDevelopmentJournal() {
   const [videos, setVideos] = useState([]); // [{ id, date, activity, url, notes, conditions, selfScore, season }]
   const [clinicFeedback, setClinicFeedback] = useState([]); // [{ id, date, topic, audience, duration, selfReflection, feedback, notes }]
   const [mentorCoachNotes, setMentorCoachNotes] = useState({}); // { chris: "...", gates: "...", mike: "..." }
-  const [mentorAssessments, setMentorAssessments] = useState({}); // { chris: { whatsWorking, consistentGaps, progress, lastUpdated }, ... }
+  const [mentorAssessments, setMentorAssessments] = useState({});
+  const [mentorProfiles, setMentorProfiles] = useState({}); // { chris: { email: "", notifications: true }, ... } // { chris: { whatsWorking, consistentGaps, progress, lastUpdated }, ... }
   const [maSessions, setMaSessions] = useState([
     {
       id: "ma-sample-3", date: "2025-04-01", context: "MA practice with Chris", who: "Peer (Dave)", activity: "Carved Long Turns",
@@ -1493,8 +1494,15 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         const themeRow = findConfig("_THEMES");
         if (themeRow?.data) { try { setThemes(JSON.parse(themeRow.data)); } catch(e) {} }
 
-        const cpRow = findConfig("_CHECKPOINTS");
-        if (cpRow?.data) { try { setCheckpoints(JSON.parse(cpRow.data)); } catch(e) {} }
+        const cpRows = allConfigRows.filter(r => r.id?.startsWith("cp_"));
+        if (cpRows.length > 0) {
+          const cps = cpRows.map(r => { try { return JSON.parse(r.data); } catch(e) { return null; } }).filter(Boolean);
+          setCheckpoints(cps.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+          cps.forEach(c => { lastSavedRef.current[`cp_${c.id}`] = JSON.stringify(c); });
+        } else {
+          const cpRow = findConfig("_CHECKPOINTS");
+          if (cpRow?.data) { try { setCheckpoints(JSON.parse(cpRow.data)); } catch(e) {} }
+        }
 
         const cnRow = findConfig("_COACH_NOTES");
         if (cnRow?.data) { try { setMentorCoachNotes(JSON.parse(cnRow.data)); } catch(e) {} }
@@ -1505,11 +1513,28 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         const rmRow = findConfig("_REFERENCE_MATERIALS");
         if (rmRow?.data) { setReferenceMaterials(rmRow.data); }
 
-        const vidRow = findConfig("_VIDEOS");
-        if (vidRow?.data) { try { setVideos(JSON.parse(vidRow.data)); } catch(e) {} }
+        const vidRows = allConfigRows.filter(r => r.id?.startsWith("vid_"));
+        if (vidRows.length > 0) {
+          const vids = vidRows.map(r => { try { return JSON.parse(r.data); } catch(e) { return null; } }).filter(Boolean);
+          setVideos(vids.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+          vids.forEach(v => { lastSavedRef.current[`vid_${v.id}`] = JSON.stringify(v); });
+        } else {
+          const vidRow = findConfig("_VIDEOS");
+          if (vidRow?.data) { try { setVideos(JSON.parse(vidRow.data)); } catch(e) {} }
+        }
 
-        const cfRow = findConfig("_CLINIC_FEEDBACK");
-        if (cfRow?.data) { try { setClinicFeedback(JSON.parse(cfRow.data)); } catch(e) {} }
+        const cliRows = allConfigRows.filter(r => r.id?.startsWith("cli_"));
+        if (cliRows.length > 0) {
+          const clis = cliRows.map(r => { try { return JSON.parse(r.data); } catch(e) { return null; } }).filter(Boolean);
+          setClinicFeedback(clis.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+          clis.forEach(c => { lastSavedRef.current[`cli_${c.id}`] = JSON.stringify(c); });
+        } else {
+          const cfRow = findConfig("_CLINIC_FEEDBACK");
+          if (cfRow?.data) { try { setClinicFeedback(JSON.parse(cfRow.data)); } catch(e) {} }
+        }
+
+        const mpRow = findConfig("_MENTOR_PROFILES");
+        if (mpRow?.data) { try { setMentorProfiles(JSON.parse(mpRow.data)); } catch(e) {} }
 
 
 
@@ -1632,6 +1657,13 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     } else {
       apiUpsert("Journal", sheetRow);
       savedIdsRef.current.add(entry.id);
+      // Notify mentors of new entry
+      const typeLabel = ENTRY_TYPES[entry.entryType]?.label || "Journal Entry";
+      const preview = entry.whatISaw ? entry.whatISaw.slice(0, 100) : "New entry";
+      notifyMentors(
+        `AT Journal: New ${typeLabel} from Mark`,
+        `Mark added a new ${typeLabel} (${entry.date || "today"}):\n\n${preview}\n\nView at: https://at-dev-tracker.vercel.app`
+      );
     }
   };
 
@@ -1640,9 +1672,20 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     apiUpsert("Config", { id: "_THEMES", data: JSON.stringify(newThemes) });
   };
 
-  const saveCheckpoints = (newCps) => {
+  const saveCheckpoints = async (newCps) => {
     setCheckpoints(newCps);
-    apiUpsert("Config", { id: "_CHECKPOINTS", data: JSON.stringify(newCps) });
+    for (const cp of newCps) {
+      const hash = JSON.stringify(cp);
+      if (lastSavedRef.current[`cp_${cp.id}`] !== hash) {
+        await apiUpsert("Config", { id: `cp_${cp.id}`, data: hash });
+        lastSavedRef.current[`cp_${cp.id}`] = hash;
+      }
+    }
+  };
+
+  const deleteCheckpoint = async (cpId) => {
+    await apiDelete("Config", `cp_${cpId}`);
+    setCheckpoints(prev => prev.filter(c => c.id !== cpId));
   };
 
   const saveCoachNotes = (notes) => {
@@ -1861,14 +1904,46 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     return prompt;
   };
 
-  const saveVideos = (vids) => {
+  const saveVideos = async (vids) => {
     setVideos(vids);
-    apiUpsert("Config", { id: "_VIDEOS", data: JSON.stringify(vids) });
+    for (const v of vids) {
+      const hash = JSON.stringify(v);
+      if (lastSavedRef.current[`vid_${v.id}`] !== hash) {
+        await apiUpsert("Config", { id: `vid_${v.id}`, data: hash });
+        lastSavedRef.current[`vid_${v.id}`] = hash;
+      }
+    }
   };
 
-  const saveClinicFeedback = (fb) => {
+  const deleteVideo = async (vidId) => {
+    await apiDelete("Config", `vid_${vidId}`);
+    setVideos(prev => prev.filter(v => v.id !== vidId));
+  };
+
+  const saveClinicFeedback = async (fb) => {
     setClinicFeedback(fb);
-    apiUpsert("Config", { id: "_CLINIC_FEEDBACK", data: JSON.stringify(fb) });
+    for (const c of fb) {
+      const hash = JSON.stringify(c);
+      if (lastSavedRef.current[`cli_${c.id}`] !== hash) {
+        await apiUpsert("Config", { id: `cli_${c.id}`, data: hash });
+        lastSavedRef.current[`cli_${c.id}`] = hash;
+      }
+    }
+  };
+
+  const deleteClinic = async (clinicId) => {
+    await apiDelete("Config", `cli_${clinicId}`);
+    setClinicFeedback(prev => prev.filter(c => c.id !== clinicId));
+  };
+
+  const saveMentorProfiles = (profiles) => {
+    setMentorProfiles(profiles);
+    apiUpsert("Config", { id: "_MENTOR_PROFILES", data: JSON.stringify(profiles) });
+  };
+
+  const notifyMentors = (subject, body) => {
+    // Send notification via Apps Script — fire and forget
+    apiPost("notify", "Config", { subject, body, profiles: JSON.stringify(mentorProfiles) });
   };
 
 
@@ -2048,7 +2123,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   const isCandidate = currentUser?.role === "candidate";
 
   const CANDIDATE_TABS = ["journal", "themes", "resources", "growth", "progress", "checkpoints", "videos", "mahistory", "timeline", "clinics", "sparring"];
-  const MENTOR_TABS = ["journal", "themes", "growth", "progress", "checkpoints", "videos", "mahistory", "timeline"];
+  const MENTOR_TABS = ["journal", "themes", "growth", "progress", "checkpoints", "videos", "mahistory", "timeline", "profile"];
   const VISIBLE_TABS = isCandidate ? CANDIDATE_TABS : MENTOR_TABS;
 
   // ── Styles (aliased from constants for brevity) ──
@@ -2180,6 +2255,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                 { id: "timeline", label: "Timeline" },
                 { id: "clinics", label: `Clinics (${clinicFeedback.length})` },
                 { id: "sparring", label: "Sparring Partner" },
+                { id: "profile", label: "Profile" },
               ].filter(t => VISIBLE_TABS.includes(t.id)).map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)} style={{
                   padding: "6px 12px", borderRadius: 6, fontSize: 14, fontWeight: 600,
@@ -4987,6 +5063,76 @@ PROGRESS I'VE NOTICED:
                 </div>
               </div>
               </>
+              )}
+            </Card>
+          </>
+        )}
+
+        {/* ═══ PROFILE ═══ */}
+        {tab === "profile" && !isSubView && (
+          <>
+            <div style={{ fontSize: 14, color: "#7a9ab5", marginBottom: 14 }}>Manage your notification preferences.</div>
+            <Card>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#e0e8f0", marginBottom: 14 }}>Notification Settings</div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={lbl}>Email Address</label>
+                <input
+                  value={mentorProfiles[currentUser.key]?.email || ""}
+                  onChange={ev => {
+                    const updated = { ...mentorProfiles, [currentUser.key]: { ...(mentorProfiles[currentUser.key] || {}), email: ev.target.value } };
+                    setMentorProfiles(updated);
+                  }}
+                  placeholder="your.email@example.com"
+                  style={inp}
+                />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <button
+                  onClick={() => {
+                    const current = mentorProfiles[currentUser.key]?.notifications !== false;
+                    const updated = { ...mentorProfiles, [currentUser.key]: { ...(mentorProfiles[currentUser.key] || {}), notifications: !current } };
+                    setMentorProfiles(updated);
+                  }}
+                  style={{
+                    width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
+                    background: (mentorProfiles[currentUser.key]?.notifications !== false) ? "#28a858" : "rgba(255,255,255,0.1)",
+                    position: "relative", transition: "background 0.2s",
+                  }}
+                >
+                  <div style={{
+                    width: 18, height: 18, borderRadius: "50%", background: "#fff",
+                    position: "absolute", top: 3,
+                    left: (mentorProfiles[currentUser.key]?.notifications !== false) ? 23 : 3,
+                    transition: "left 0.2s",
+                  }} />
+                </button>
+                <span style={{ fontSize: 14, color: "#d0d8e0" }}>
+                  Email notifications {(mentorProfiles[currentUser.key]?.notifications !== false) ? "on" : "off"}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: "#4d6888", marginBottom: 14 }}>
+                When enabled, you'll receive an email when Mark creates a new journal entry. Updates to existing entries do not trigger notifications.
+              </div>
+              <button
+                onClick={() => saveMentorProfiles(mentorProfiles)}
+                style={{
+                  padding: "10px 20px", borderRadius: 7, border: "none",
+                  background: "linear-gradient(135deg, #e07830, #c06020)", color: "#fff",
+                  fontSize: 15, fontWeight: 700, cursor: "pointer",
+                }}
+              >Save Profile</button>
+              {mentorProfiles[currentUser.key]?.email && (
+                <button
+                  onClick={() => {
+                    notifyMentors("AT Journal: Test Notification", `This is a test notification for ${currentUser.name}.\n\nIf you received this, notifications are working.`);
+                    alert("Test email sent to " + mentorProfiles[currentUser.key].email);
+                  }}
+                  style={{
+                    marginLeft: 10, padding: "10px 20px", borderRadius: 7,
+                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+                    color: "#7a9ab5", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  }}
+                >Send Test Email</button>
               )}
             </Card>
           </>

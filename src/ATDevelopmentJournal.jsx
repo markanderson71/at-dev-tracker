@@ -667,13 +667,18 @@ const MA_PEER_DIALOG_SYSTEM = `You are acting as a ski instructor PEER being obs
 YOUR ROLE: You are NOT a coach. You are the instructor Mark just observed. Answer his questions AS THAT INSTRUCTOR would — with your perspective on what you were doing, feeling, and intending.
 
 HOW TO RESPOND:
-- Answer honestly about your intent, tactics, focus, and how you felt about your skiing
-- Sometimes give clear, helpful answers: "I was trying to maintain a consistent turn shape and control speed through the arc"
-- Sometimes give answers that reveal a gap in YOUR understanding: "I thought I was carving but I could feel the tails washing out — I'm not sure why"
-- Occasionally say something surprising that tests Mark's ability to adapt: "I was actually trying to ski faster — I thought more speed would help me hold the edge" (which might contradict what Mark observed)
-- Sometimes state a focus that's DIFFERENT from what Mark identified — this tests whether he can connect his observation to your intent rather than overriding it: "I've been really focused on my steering" (when Mark saw an edging issue). A good AT response connects the two; a weak one tells you to forget steering and work on edging instead.
-- If Mark asks about a specific fundamental, give your honest self-assessment — you might be wrong about what you're doing
-- Keep answers to 1-2 sentences — concise, natural, like a real conversation between instructors
+- ONE sentence. No preamble. No "yeah good question" or "honestly." Just answer.
+- Respond with what a real instructor would say: tactics, fundamentals, cues, ski performance, turn outcome
+- Examples of realistic peer responses:
+  - "I was focusing on getting my edges engaged before the fall line."
+  - "I felt like the tails were washing out in the second half of the turn."
+  - "My cue was to tip my feet and let the sidecut do the work."
+  - "I wanted rounder turn shape but I think I was getting a bit of a Z at initiation."
+  - "I'm not sure — it felt like I was carving but the tracks didn't look clean."
+- Sometimes reveal a gap in YOUR understanding in one sentence: "I thought more speed would help me hold the edge."
+- Sometimes state a focus DIFFERENT from what Mark identified: "I was really working on my steering."
+- If Mark asks a follow-up, answer it directly in one sentence
+- Keep answers to 1 sentence — you're an instructor, not giving a lecture
 - Reference your cert level naturally. In AT exam context, you are ALWAYS L3 certified or above — you understand terminology, have teaching experience, and can discuss technique. Your self-awareness and precision vary by level:
   - Weak L3: understands basics but struggles to articulate what they feel vs what's happening. Self-assessment may be inaccurate.
   - Solid L3: good self-awareness, can describe what they feel, may not connect it to specific fundamentals
@@ -707,16 +712,18 @@ Examiner questions serve MULTIPLE purposes — asking questions is NOT inherentl
 You are a VERIFIER, not a justifier. You are checking whether the candidate has the depth, not making them defend themselves.
 
 EXAMINER BEHAVIOR:
-1. Acknowledge ONE thing Mark did well — one sentence, specific
-2. Ask ONE question at a time — one sentence. Be direct. No preamble.
-3. Your questions should target: missing criteria from the scorecard, depth of fundamental understanding, body-to-ski-to-snow connections, or evaluation of impact on performance
-4. Examples of good examiner questions:
+1. ONE sentence acknowledgment of something done well, then immediately ask your first question
+2. ONE question at a time. ONE sentence. No preamble, no setup, no "I want to push on this." Just ask.
+3. Questions target: missing criteria, depth of fundamentals, body-ski-snow connections, impact on performance
+4. Examples of real examiner questions:
    - "Which fundamental is driving the others?"
-   - "What is the ski doing on the snow during shaping as a result of that movement?"
+   - "What is the outside ski doing on the snow at initiation?"
    - "Is this a skill deficiency or a DIRT issue?"
-   - "How do the conditions change what you'd prescribe?"
+   - "How do the conditions change your prescription?"
    - "What would success look like for the skier?"
-5. Do NOT give multi-paragraph responses. Real examiners are concise — one sentence question, wait for answer.
+   - "What's the inside ski doing during that phase?"
+   - "Connect that to ski design — what's happening at the sidecut level?"
+5. Do NOT give multi-sentence responses. Do NOT restate what Mark said. Do NOT set up the question with context. Just ask.
 6. After 3-4 exchanges, provide a brief honest summary before scoring.`;
 
 const SPARRING_MODES = {
@@ -2549,9 +2556,50 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
               const count = entries.filter(e => (e.themeIds || []).includes(t.id)).length;
               return (
                 <Card key={t.id} style={{ borderLeft: "3px solid #e07830" }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#d0d8e0", marginBottom: 4, lineHeight: 1.4 }}>"{t.question}"</div>
-                  <div style={{ fontSize: 13, color: "#7a9ab5", lineHeight: 1.5, marginBottom: 8 }}>{t.description}</div>
-                  <div style={{ fontSize: 12, color: "#4d6888" }}>{count} reflection{count !== 1 ? "s" : ""} tagged to this theme</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#d0d8e0", marginBottom: 4, lineHeight: 1.4 }}>"{t.question}"</div>
+                      <div style={{ fontSize: 13, color: "#7a9ab5", lineHeight: 1.5, marginBottom: 8 }}>{t.description}</div>
+                    </div>
+                    {isMentor && (
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 8 }}>
+                        <button onClick={() => setEditingTheme({ ...t })} style={{ background: "none", border: "none", color: "#7a9ab5", fontSize: 11, cursor: "pointer" }}>Edit</button>
+                        <button onClick={() => {
+                          if (confirm("Delete this theme?")) {
+                            saveThemes(themes.filter(x => x.id !== t.id));
+                          }
+                        }} style={{ background: "none", border: "none", color: "#3a5068", fontSize: 11, cursor: "pointer" }}>Delete</button>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ fontSize: 12, color: "#4d6888" }}>{count} reflection{count !== 1 ? "s" : ""} tagged</div>
+                    {isMentor && (
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {[
+                          { id: "surface", label: "Surface", color: "#e05028" },
+                          { id: "connecting", label: "Connecting", color: "#e8a050" },
+                          { id: "integrated", label: "Integrated", color: "#28a858" },
+                        ].map(d => (
+                          <button key={d.id} onClick={() => {
+                            const updated = themes.map(x => x.id === t.id ? { ...x, depthLevel: d.id } : x);
+                            saveThemes(updated);
+                          }} style={{
+                            padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: "pointer",
+                            background: t.depthLevel === d.id ? `${d.color}18` : "transparent",
+                            border: `1px solid ${t.depthLevel === d.id ? d.color + "40" : "rgba(255,255,255,0.06)"}`,
+                            color: t.depthLevel === d.id ? d.color : "#4d6888",
+                          }}>{d.label}</button>
+                        ))}
+                      </div>
+                    )}
+                    {!isMentor && t.depthLevel && (
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
+                        color: t.depthLevel === "surface" ? "#e05028" : t.depthLevel === "connecting" ? "#e8a050" : "#28a858",
+                        background: t.depthLevel === "surface" ? "rgba(224,80,40,0.1)" : t.depthLevel === "connecting" ? "rgba(232,160,80,0.1)" : "rgba(40,168,88,0.1)",
+                      }}>{t.depthLevel === "surface" ? "Surface" : t.depthLevel === "connecting" ? "Connecting" : "Integrated"}</span>
+                    )}
+                  </div>
                 </Card>
               );
             })}
@@ -2568,12 +2616,56 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
             )}
 
             {isMentor && (
-              <button onClick={() => setEditingTheme({ id: uid(), question: "", description: "", active: true, createdAt: new Date().toISOString() })} style={{
+              <button onClick={() => setEditingTheme({ id: uid(), question: "", description: "", active: true, depthLevel: "", createdAt: new Date().toISOString() })} style={{
                 padding: "8px 14px", borderRadius: 6, border: "1px solid rgba(224,120,48,0.3)", background: "rgba(224,120,48,0.08)",
                 color: "#e8a050", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8,
               }}>+ Add Theme</button>
             )}
+          </>
+        )}
 
+        {/* ═══ THEME EDIT ═══ */}
+        {editingTheme && (() => {
+          const t = editingTheme;
+          const upd = (f, v) => setEditingTheme(p => ({ ...p, [f]: v }));
+          return (
+            <div>
+              <button onClick={() => setEditingTheme(null)} style={{ background: "none", border: "none", color: "#7a9ab5", fontSize: 14, cursor: "pointer", padding: "0 0 10px", fontWeight: 600 }}>← Cancel</button>
+              <Card>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#e0e8f0", marginBottom: 14 }}>{themes.find(x => x.id === t.id) ? "Edit Theme" : "New Theme"}</div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={lbl}>Development Question</label>
+                  <input value={t.question || ""} onChange={e => upd("question", e.target.value)} placeholder="e.g., How do I prioritize the root cause in a multi-skill cascade?" style={inp} />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={lbl}>Description</label>
+                  <textarea value={t.description || ""} onChange={e => upd("description", e.target.value)} placeholder="Why this theme matters for your AT development..." style={txta} />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={lbl}>Status</label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => upd("active", true)} style={{ padding: "6px 14px", borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: "pointer", background: t.active ? "rgba(40,168,88,0.1)" : "rgba(255,255,255,0.02)", border: `1px solid ${t.active ? "rgba(40,168,88,0.3)" : "rgba(255,255,255,0.06)"}`, color: t.active ? "#28a858" : "#4d6888" }}>Active</button>
+                    <button onClick={() => upd("active", false)} style={{ padding: "6px 14px", borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: "pointer", background: !t.active ? "rgba(224,80,40,0.1)" : "rgba(255,255,255,0.02)", border: `1px solid ${!t.active ? "rgba(224,80,40,0.3)" : "rgba(255,255,255,0.06)"}`, color: !t.active ? "#e05028" : "#4d6888" }}>Retired</button>
+                  </div>
+                </div>
+                <button onClick={() => {
+                  const isNew = !themes.find(x => x.id === t.id);
+                  const updated = isNew ? [t, ...themes] : themes.map(x => x.id === t.id ? t : x);
+                  saveThemes(updated);
+                  setEditingTheme(null);
+                }} style={{
+                  width: "100%", padding: "12px", borderRadius: 7, border: "none",
+                  background: "linear-gradient(135deg, #e07830, #c06020)", color: "#fff",
+                  fontSize: 15, fontWeight: 700, cursor: "pointer",
+                }}>Save Theme</button>
+              </Card>
+            </div>
+          );
+        })()}
+
+        {/* ═══ THEMES — COACHING NOTES ═══ */}
+        {tab === "themes" && !isSubView && (
+          <>
             {/* Mentor Coaching Notes for AI */}
             {isMentor && (
               <Card style={{ marginTop: 20, borderLeft: "3px solid #c060a0" }}>
@@ -3255,11 +3347,22 @@ PROGRESS I'VE NOTICED:
             </div>
 
             {isMentor && (
-              <button onClick={() => setEditingCheckpoint({
-                id: uid(), date: today(), mentorId: currentUser.key,
-                whatImSeeing: "", pushOnNext: "", connectionsWell: "", connectionsMissing: "",
-                markResponse: "", timestamp: new Date().toISOString(),
-              })} style={{
+              <button onClick={() => {
+                // Get most recent checkpoint from this mentor
+                const prevCp = [...checkpoints]
+                  .filter(c => c.mentorId === currentUser.key)
+                  .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+                const coachNotes = mentorCoachNotes[currentUser.key] || "";
+                setEditingCheckpoint({
+                  id: uid(), date: today(), mentorId: currentUser.key,
+                  whatImSeeing: prevCp?.whatImSeeing || "",
+                  pushOnNext: prevCp?.pushOnNext || "",
+                  connectionsWell: prevCp?.connectionsWell || "",
+                  connectionsMissing: prevCp?.connectionsMissing || "",
+                  coachingNotes: coachNotes,
+                  markResponse: "", timestamp: new Date().toISOString(),
+                });
+              }} style={{
                 padding: "8px 14px", borderRadius: 6, border: "1px solid rgba(224,120,48,0.3)", background: "rgba(224,120,48,0.08)",
                 color: "#e8a050", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 12,
               }}>+ New Checkpoint Review</button>
@@ -3286,6 +3389,7 @@ PROGRESS I'VE NOTICED:
                       { label: "Push On Next", val: cp.pushOnNext },
                       { label: "Connections You're Making Well", val: cp.connectionsWell },
                       { label: "Connections You're Missing", val: cp.connectionsMissing },
+                      { label: "Coaching Notes for AI Sparring Partner", val: cp.coachingNotes },
                     ].filter(s => s.val).map(s => (
                       <div key={s.label} style={{ marginBottom: 10 }}>
                         <SectionLabel>{s.label}</SectionLabel>
@@ -3332,6 +3436,7 @@ PROGRESS I'VE NOTICED:
                   { f: "pushOnNext", l: "What I'd push on next", p: "Where should Mark focus his attention?" },
                   { f: "connectionsWell", l: "Connections he's making well", p: "Where is his thinking strongest?" },
                   { f: "connectionsMissing", l: "Connections he's missing", p: "Where is he still thinking in pieces?" },
+                  { f: "coachingNotes", l: "Coaching Notes for AI Sparring Partner", p: "What should the AI push Mark on? This updates the active coaching notes when saved." },
                 ].map(field => (
                   <div key={field.f} style={{ marginBottom: 12 }}>
                     <label style={lbl}>{field.l}</label>
@@ -3342,6 +3447,12 @@ PROGRESS I'VE NOTICED:
                   const isNew = !checkpoints.find(c => c.id === cp.id);
                   const updated = isNew ? [cp, ...checkpoints] : checkpoints.map(c => c.id === cp.id ? cp : c);
                   saveCheckpoints(updated);
+                  // Sync coaching notes back to active coaching notes
+                  if (cp.coachingNotes !== undefined) {
+                    const updatedNotes = { ...mentorCoachNotes, [currentUser.key]: cp.coachingNotes };
+                    setMentorCoachNotes(updatedNotes);
+                    apiUpsert("Config", { id: "_COACH_NOTES", data: JSON.stringify(updatedNotes) });
+                  }
                   setEditingCheckpoint(null);
                 }} style={{
                   width: "100%", padding: "12px", borderRadius: 7, border: "none",
@@ -4418,7 +4529,7 @@ PROGRESS I'VE NOTICED:
                               ev.target.value = "";
                               setExamMALoading(true);
                               const prevDialog = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                              const context = `You are a fellow AT candidate (${examMA.who}) who just performed ${examMA.activity} on ${examMA.conditions} during an AT assessment. You are L3 certified or above. You had a dialog with the trainer (Mark, another AT candidate) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nKeep responses to 2-3 sentences. Be natural. As an L3+ instructor you understand terminology and engage meaningfully — your self-awareness matches your level.`;
+                              const context = `You are a fellow AT candidate (${examMA.who}) who just performed ${examMA.activity} on ${examMA.conditions} during an AT assessment. You are L3 certified or above. You had a dialog with the trainer (Mark, another AT candidate) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nONE sentence. No preamble. Natural. As an L3+ instructor you understand terminology.`;
                               const msgs = [{ role: "user", content: context }, ...newMsgs];
                               const resp = await callClaude(msgs, buildSystemPrompt(MA_PEER_DIALOG_SYSTEM));
                               setExamMA(p => ({ ...p, prescriptionDialog: [...newMsgs, { role: "assistant", content: resp }] }));
@@ -4435,7 +4546,7 @@ PROGRESS I'VE NOTICED:
                           el.value = "";
                           setExamMALoading(true);
                           const prevDialog = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
-                          const context = `You are a fellow AT candidate (${examMA.who}) who just performed ${examMA.activity} on ${examMA.conditions} during an AT assessment. You are L3 certified or above. You had a dialog with the trainer (Mark, another AT candidate) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nKeep responses to 2-3 sentences. Be natural. As an L3+ instructor you understand terminology and engage meaningfully — your self-awareness matches your level.`;
+                          const context = `You are a fellow AT candidate (${examMA.who}) who just performed ${examMA.activity} on ${examMA.conditions} during an AT assessment. You are L3 certified or above. You had a dialog with the trainer (Mark, another AT candidate) about your skiing. Now Mark is delivering a prescription — telling you what to work on and why.\n\nPrevious dialog:\n${prevDialog}\n\nRespond as the peer receiving this prescription. You might:\n- Acknowledge and show you understand the connection to your focus\n- Ask a clarifying question: "Why pivot slips specifically? How does that help my steering?"\n- Express uncertainty: "I'm not sure I see how that connects to what I was working on"\n- Push back if something doesn't make sense\nONE sentence. No preamble. Natural. As an L3+ instructor you understand terminology.`;
                           const msgs = [{ role: "user", content: context }, ...newMsgs];
                           const resp = await callClaude(msgs, buildSystemPrompt(MA_PEER_DIALOG_SYSTEM));
                           setExamMA(p => ({ ...p, prescriptionDialog: [...newMsgs, { role: "assistant", content: resp }] }));

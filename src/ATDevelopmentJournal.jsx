@@ -1942,8 +1942,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   };
 
   const notifyMentors = (subject, body) => {
-    // Send notification via Apps Script — fire and forget
-    apiPost("notify", "Config", { subject, body, profiles: JSON.stringify(mentorProfiles) });
+    apiPost("notify", "Config", { subject, body });
   };
 
 

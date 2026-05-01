@@ -319,7 +319,12 @@ const today = () => new Date().toISOString().split("T")[0];
 const parseSummary = (summary) => {
   if (!summary) return null;
   try {
-    const obj = typeof summary === "string" ? JSON.parse(summary) : summary;
+    // Handle double-stringified JSON
+    let text = summary;
+    if (typeof text === "string" && text.startsWith('"')) {
+      try { text = JSON.parse(text); } catch(e) {}
+    }
+    const obj = typeof text === "string" ? JSON.parse(text) : text;
     if (obj?.scores) {
       Object.keys(obj.scores).forEach(k => { obj.scores[k] = Number(obj.scores[k]) || 0; });
       return obj;
@@ -328,6 +333,9 @@ const parseSummary = (summary) => {
       const reparsed = parseAIJson(obj.raw);
       if (reparsed?.scores) return { ...obj, ...reparsed };
     }
+    // Try parseAIJson on the whole object as string
+    const fallback = parseAIJson(typeof summary === "string" ? summary : JSON.stringify(summary));
+    if (fallback?.scores) return fallback;
     return obj;
   } catch(e) {
     if (typeof summary === "string") return parseAIJson(summary);
@@ -1942,10 +1950,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
   };
 
   const notifyMentors = async (subject, body) => {
-    console.log("Sending notification:", subject);
-    const ok = await apiPost("notify", "Config", { subject, body });
-    console.log("Notification result:", ok);
-    return ok;
+    return await apiPost("notify", "Config", { subject, body });
   };
 
 
@@ -2443,8 +2448,8 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
               <Card>
                 <SectionLabel>Mentor Feedback</SectionLabel>
 
-                {/* Existing depth assessments */}
-                {Object.entries(e.mentorPulse || {}).map(([mentorKey, pulseId]) => {
+                {/* Existing depth assessments from OTHER mentors */}
+                {Object.entries(e.mentorPulse || {}).filter(([k]) => k !== currentUser?.key).map(([mentorKey, pulseId]) => {
                   const mentor = USERS[mentorKey];
                   const pulse = PULSE_OPTIONS.find(p => p.id === pulseId);
                   if (!mentor || !pulse) return null;
@@ -2457,24 +2462,48 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   );
                 })}
 
-                {/* Mentor can assess depth */}
-                {isMentor && !e.mentorPulse?.[currentUser.key] && (
+                {/* Mentor can assess or change depth */}
+                {isMentor && (
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ fontSize: 10, color: "#7a9ab5", fontWeight: 600, marginBottom: 4 }}>How deep is Mark's thinking here?</div>
                     <div style={{ display: "flex", gap: 6 }}>
-                    {PULSE_OPTIONS.map(p => (
-                      <button key={p.id} onClick={() => {
-                        const updated = { ...e, mentorPulse: { ...(e.mentorPulse || {}), [currentUser.key]: p.id } };
-                        saveEntry(updated);
-                        setViewingEntry(updated);
-                      }} style={{
-                        flex: 1, padding: "8px 6px", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                        background: `${p.color}10`, border: `1.5px solid ${p.color}30`, color: p.color,
-                      }}>{p.icon} {p.label}</button>
-                    ))}
+                    {PULSE_OPTIONS.map(p => {
+                      const isSelected = e.mentorPulse?.[currentUser.key] === p.id;
+                      return (
+                        <button key={p.id} onClick={() => {
+                          // Toggle off if clicking current selection, otherwise set new value
+                          const newPulse = isSelected ? undefined : p.id;
+                          const updatedPulse = { ...(e.mentorPulse || {}) };
+                          if (newPulse) { updatedPulse[currentUser.key] = newPulse; }
+                          else { delete updatedPulse[currentUser.key]; }
+                          const updated = { ...e, mentorPulse: updatedPulse };
+                          saveEntry(updated);
+                          setViewingEntry(updated);
+                        }} style={{
+                          flex: 1, padding: "8px 6px", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                          background: isSelected ? `${p.color}20` : `${p.color}08`,
+                          border: `1.5px solid ${isSelected ? p.color : p.color + "30"}`,
+                          color: p.color,
+                        }}>{p.icon} {p.label}</button>
+                      );
+                    })}
                     </div>
                   </div>
                 )}
+
+                {/* Show depth for non-mentors */}
+                {!isMentor && Object.entries(e.mentorPulse || {}).map(([mentorKey, pulseId]) => {
+                  const mentor = USERS[mentorKey];
+                  const pulse = PULSE_OPTIONS.find(p => p.id === pulseId);
+                  if (!mentor || !pulse) return null;
+                  return (
+                    <div key={mentorKey} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "6px 8px", borderRadius: 5, background: `${pulse.color}08` }}>
+                      <div style={{ width: 20, height: 20, borderRadius: "50%", background: `${mentor.color}20`, border: `1.5px solid ${mentor.color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: mentor.color }}>{mentor.name[0]}</div>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: pulse.color }}>{pulse.icon} {pulse.label}</span>
+                      <span style={{ fontSize: 11, color: "#4d6888" }}>{pulse.desc}</span>
+                    </div>
+                  );
+                })}
 
                 {/* Comments */}
                 {(e.mentorComments || []).map((c, ci) => {
@@ -2911,11 +2940,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   {/* Summary display */}
                   {s.summary && (() => {
                     let parsed = parseSummary(s.summary);
-                    // If parseSummary returned an object with raw but no scores, try harder
-                    if (parsed && !parsed.scores && parsed.raw) {
-                      const retry = parseAIJson(parsed.raw);
-                      if (retry?.scores) parsed = retry;
-                    }
+
                     if (!parsed || !parsed.scores) {
                       // Clean fallback — strip JSON artifacts for readable display
                       const raw = typeof s.summary === "string" ? s.summary : JSON.stringify(s.summary, null, 2);
@@ -3055,7 +3080,8 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   maScoreKeys.forEach(k => { scoreHistory[k] = []; });
                   analyzedSessions.sort((a, b) => (a.date || "").localeCompare(b.date || "")).forEach(s => {
                     try {
-                      const parsed = parseSummary(s.summary);
+                      let parsed = parseSummary(s.summary);
+
                       if (parsed?.scores) {
                         maScoreKeys.forEach(k => {
                           if (parsed.scores[k]) scoreHistory[k].push({ score: parsed.scores[k], date: s.date, context: s.activity || s.who || "" });
@@ -3069,7 +3095,8 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   const allStrengths = [];
                   analyzedSessions.forEach(s => {
                     try {
-                      const parsed = parseSummary(s.summary);
+                      let parsed = parseSummary(s.summary);
+
                       if (parsed?.gaps) allGaps.push(...parsed.gaps);
                       if (parsed?.strengths) allStrengths.push(...parsed.strengths);
                     } catch(e) {}
@@ -3603,7 +3630,7 @@ PROGRESS I'VE NOTICED:
                       <div><div style={{ fontSize: 10, color: "#7a9ab5", fontWeight: 600, marginBottom: 2 }}>SELF-ASSESSMENT (1-6)</div><select value={v.selfScore || ""} onChange={ev => { saveVideos(videos.map(x => x.id === v.id ? { ...x, selfScore: ev.target.value } : x)); }} style={{ ...inp, fontSize: 12, padding: "4px 6px", cursor: "pointer", appearance: "auto" }}><option value="">—</option>{[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}</select></div>
                     </div>
                     <div style={{ marginTop: 6 }}><div style={{ fontSize: 10, color: "#7a9ab5", fontWeight: 600, marginBottom: 2 }}>NOTES</div><textarea value={v.notes || ""} onChange={ev => { saveVideos(videos.map(x => x.id === v.id ? { ...x, notes: ev.target.value } : x)); }} placeholder="What did you see? What's improving?" style={{ ...txta, fontSize: 12, minHeight: 40 }} /></div>
-                    <button onClick={() => { if (confirm("Delete this video?")) saveVideos(videos.filter(x => x.id !== v.id)); }} style={{ background: "none", border: "none", color: "#4d6888", fontSize: 11, cursor: "pointer", marginTop: 4 }}>Delete</button>
+                    <button onClick={() => { if (confirm("Delete this video?")) deleteVideo(v.id); }} style={{ background: "none", border: "none", color: "#4d6888", fontSize: 11, cursor: "pointer", marginTop: 4 }}>Delete</button>
                   </details>
 
                   {/* Comments */}
@@ -3656,11 +3683,7 @@ PROGRESS I'VE NOTICED:
               </Card>
             ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
               let aiScores = parseSummary(s.summary);
-              // If parseSummary returned raw but no scores, try harder
-              if (aiScores && !aiScores.scores && aiScores.raw) {
-                const retry = parseAIJson(aiScores.raw);
-                if (retry?.scores) aiScores = retry;
-              }
+
               if (s.summary && (!aiScores || !aiScores.scores)) {
                 console.log("Summary parse failed for", s.id, "— raw type:", typeof s.summary, "— first 200:", String(s.summary).slice(0, 200));
               }
@@ -4055,7 +4078,7 @@ PROGRESS I'VE NOTICED:
                   <div style={{ fontSize: 10, color: "#7a9ab5", fontWeight: 600, marginBottom: 2 }}>MENTOR NOTES</div>
                   <textarea value={c.notes || ""} onChange={ev => { saveClinicFeedback(clinicFeedback.map(x => x.id === c.id ? { ...x, notes: ev.target.value } : x)); }} placeholder="Mentor feedback on this clinic" style={{ ...txta, fontSize: 12, minHeight: 40 }} />
                 </div>
-                <button onClick={() => { if (confirm("Delete this clinic?")) saveClinicFeedback(clinicFeedback.filter(x => x.id !== c.id)); }} style={{ background: "none", border: "none", color: "#4d6888", fontSize: 11, cursor: "pointer" }}>Delete</button>
+                <button onClick={() => { if (confirm("Delete this clinic?")) deleteClinic(c.id); }} style={{ background: "none", border: "none", color: "#4d6888", fontSize: 11, cursor: "pointer" }}>Delete</button>
               </Card>
             ))}
           </>

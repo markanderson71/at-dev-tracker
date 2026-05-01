@@ -1941,8 +1941,11 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     apiUpsert("Config", { id: "_MENTOR_PROFILES", data: JSON.stringify(profiles) });
   };
 
-  const notifyMentors = (subject, body) => {
-    apiPost("notify", "Config", { subject, body });
+  const notifyMentors = async (subject, body) => {
+    console.log("Sending notification:", subject);
+    const ok = await apiPost("notify", "Config", { subject, body });
+    console.log("Notification result:", ok);
+    return ok;
   };
 
 
@@ -5122,9 +5125,9 @@ PROGRESS I'VE NOTICED:
               >Save Profile</button>
               {mentorProfiles[currentUser.key]?.email && (
                 <button
-                  onClick={() => {
-                    notifyMentors("AT Journal: Test Notification", `This is a test notification for ${currentUser.name}.\n\nIf you received this, notifications are working.`);
-                    alert("Test email sent to " + mentorProfiles[currentUser.key].email);
+                  onClick={async () => {
+                    const ok = await notifyMentors("AT Journal: Test Notification", `This is a test notification for ${currentUser.name}.\n\nIf you received this, notifications are working.`);
+                    alert(ok ? "Test email sent — check your inbox" : "Send failed — check console for details");
                   }}
                   style={{
                     marginLeft: 10, padding: "10px 20px", borderRadius: 7,

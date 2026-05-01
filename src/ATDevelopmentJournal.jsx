@@ -3083,11 +3083,14 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                       let parsed = parseSummary(s.summary);
 
                       if (parsed?.scores) {
+                        console.log("Growth:", s.id?.slice(0,7), s.date, JSON.stringify(parsed.scores));
                         maScoreKeys.forEach(k => {
                           if (parsed.scores[k]) scoreHistory[k].push({ score: parsed.scores[k], date: s.date, context: s.activity || s.who || "" });
                         });
+                      } else {
+                        console.log("Growth NO scores:", s.id?.slice(0,7), s.date, typeof s.summary, String(s.summary || "").slice(0, 80));
                       }
-                    } catch(e) {}
+                    } catch(e) { console.log("Growth PARSE ERROR:", s.id?.slice(0,7), e.message); }
                   });
 
                   // Collect all gaps and strengths across sessions
@@ -3683,6 +3686,7 @@ PROGRESS I'VE NOTICED:
               </Card>
             ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
               let aiScores = parseSummary(s.summary);
+              if (aiScores?.scores) { console.log("History:", s.id?.slice(0,7), s.date, JSON.stringify(aiScores.scores)); }
 
               if (s.summary && (!aiScores || !aiScores.scores)) {
                 console.log("Summary parse failed for", s.id, "— raw type:", typeof s.summary, "— first 200:", String(s.summary).slice(0, 200));

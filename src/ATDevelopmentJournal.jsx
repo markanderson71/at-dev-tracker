@@ -1505,7 +1505,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         const cpRows = allConfigRows.filter(r => r.id?.startsWith("cp_"));
         if (cpRows.length > 0) {
           const cps = cpRows.map(r => { try { return JSON.parse(r.data); } catch(e) { return null; } }).filter(Boolean);
-          setCheckpoints(cps.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+          setCheckpoints(cps.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")));
           cps.forEach(c => { lastSavedRef.current[`cp_${c.id}`] = JSON.stringify(c); });
         } else {
           const cpRow = findConfig("_CHECKPOINTS");
@@ -1524,7 +1524,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         const vidRows = allConfigRows.filter(r => r.id?.startsWith("vid_"));
         if (vidRows.length > 0) {
           const vids = vidRows.map(r => { try { return JSON.parse(r.data); } catch(e) { return null; } }).filter(Boolean);
-          setVideos(vids.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+          setVideos(vids.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")));
           vids.forEach(v => { lastSavedRef.current[`vid_${v.id}`] = JSON.stringify(v); });
         } else {
           const vidRow = findConfig("_VIDEOS");
@@ -1534,7 +1534,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
         const cliRows = allConfigRows.filter(r => r.id?.startsWith("cli_"));
         if (cliRows.length > 0) {
           const clis = cliRows.map(r => { try { return JSON.parse(r.data); } catch(e) { return null; } }).filter(Boolean);
-          setClinicFeedback(clis.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+          setClinicFeedback(clis.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")));
           clis.forEach(c => { lastSavedRef.current[`cli_${c.id}`] = JSON.stringify(c); });
         } else {
           const cfRow = findConfig("_CLINIC_FEEDBACK");
@@ -1585,7 +1585,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
             } catch(e) { return null; }
           }).filter(Boolean);
           console.log("Loaded", sessions.length, "MA sessions from MASessions tab");
-          setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+          setMaSessions(sessions.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")));
           sessions.forEach(s => { lastSavedRef.current[s.id] = JSON.stringify(s); });
         } else {
           // Legacy: single _MA_SESSIONS row or ma_* rows in JournalEntries
@@ -1604,7 +1604,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
             }
           }
           if (legacySessions.length > 0) {
-            setMaSessions(legacySessions.sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+            setMaSessions(legacySessions.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")));
           }
         }
 
@@ -1985,7 +1985,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
     // Layer 3: Recent reflection history + mentor comments and pulse
     const recentEntries = [...entries]
-      .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+      .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || ""))
       .slice(0, 8);
     if (recentEntries.length > 0) {
       prompt += "\n\n=== MARK'S RECENT REFLECTIONS (most recent first) ===\nUse these to track Mark's development arc. Reference them when relevant — notice patterns, growth, and recurring gaps.\n";
@@ -2024,7 +2024,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
     }
 
     // Layer 5: MA session transcripts, analysis, and MENTOR FEEDBACK
-    const recentMA = [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 4);
+    const recentMA = [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).slice(0, 4);
     if (recentMA.length > 0) {
       prompt += "\n\n=== MARK'S MA SESSION TRANSCRIPTS ===\nThese are Mark's actual MA practice sessions with AI analysis and MENTOR FEEDBACK. The mentor feedback is the most important calibration data — it shows you how real AT examiners evaluate Mark's work. Align your coaching with what the mentors push on.\n";
       recentMA.forEach(s => {
@@ -2111,7 +2111,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
     // Layer 8: Checkpoint reviews
     if (checkpoints.length > 0) {
-      const recentCps = [...checkpoints].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 2);
+      const recentCps = [...checkpoints].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).slice(0, 2);
       prompt += "\n\n=== MENTOR CHECKPOINT REVIEWS ===\n";
       recentCps.forEach(cp => {
         const name = USERS[cp.mentorId]?.name || cp.mentorId;
@@ -2328,7 +2328,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
             ) : (
               entries
                 .filter(e => !selectedThemeFilter || (e.themeIds || []).includes(selectedThemeFilter))
-                .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+                .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || ""))
                 .map(e => {
                   const pulseValues = Object.values(e.mentorPulse || {});
                   const mentorDepth = pulseValues.length > 0 ? PULSE_OPTIONS.find(p => p.id === (pulseValues.includes("integrated") ? "integrated" : pulseValues.includes("connecting") ? "connecting" : pulseValues[0])) : null;
@@ -3047,7 +3047,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
         {/* ═══ GROWTH ═══ */}
         {tab === "growth" && !isSubView && (() => {
-          const sorted = [...entries].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+          const sorted = [...entries].sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.id || "").localeCompare(b.id || ""));
           const depthCounts = { surface: 0, connecting: 0, integrated: 0 };
           sorted.forEach(e => { Object.values(e.mentorPulse || {}).forEach(v => { if (depthCounts[v] !== undefined) depthCounts[v]++; }); });
           const totalTagged = sorted.filter(e => (e.connectionTags || []).length > 0).length;
@@ -3078,19 +3078,16 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
                   // Build score history per criteria from all analyzed sessions
                   const scoreHistory = {};
                   maScoreKeys.forEach(k => { scoreHistory[k] = []; });
-                  analyzedSessions.sort((a, b) => (a.date || "").localeCompare(b.date || "")).forEach(s => {
+                  analyzedSessions.sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.id || "").localeCompare(b.id || "")).forEach(s => {
                     try {
                       let parsed = parseSummary(s.summary);
 
                       if (parsed?.scores) {
-                        console.log("Growth:", s.id?.slice(0,7), s.date, JSON.stringify(parsed.scores));
                         maScoreKeys.forEach(k => {
                           if (parsed.scores[k]) scoreHistory[k].push({ score: parsed.scores[k], date: s.date, context: s.activity || s.who || "" });
                         });
-                      } else {
-                        console.log("Growth NO scores:", s.id?.slice(0,7), s.date, typeof s.summary, String(s.summary || "").slice(0, 80));
                       }
-                    } catch(e) { console.log("Growth PARSE ERROR:", s.id?.slice(0,7), e.message); }
+                    } catch(e) {}
                   });
 
                   // Collect all gaps and strengths across sessions
@@ -3330,7 +3327,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
                     // Gather MA sessions data
                     let maContext = "";
-                    const recentMA = [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 8);
+                    const recentMA = [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).slice(0, 8);
                     if (recentMA.length > 0) {
                       maContext = "MA SESSIONS:\n";
                       recentMA.forEach(s => {
@@ -3355,7 +3352,7 @@ THE FOUR VARIABLES INTERACT AS A SYSTEM:
 
                     // Gather journal entries
                     let journalContext = "";
-                    const recentEntries = [...entries].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 8);
+                    const recentEntries = [...entries].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).slice(0, 8);
                     if (recentEntries.length > 0) {
                       journalContext = "\n\nJOURNAL REFLECTIONS:\n";
                       recentEntries.forEach(e => {
@@ -3459,7 +3456,7 @@ PROGRESS I'VE NOTICED:
                 // Get most recent checkpoint from this mentor
                 const prevCp = [...checkpoints]
                   .filter(c => c.mentorId === currentUser.key)
-                  .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+                  .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || ""))[0];
                 const coachNotes = mentorCoachNotes[currentUser.key] || "";
                 setEditingCheckpoint({
                   id: uid(), date: today(), mentorId: currentUser.key,
@@ -3482,7 +3479,7 @@ PROGRESS I'VE NOTICED:
                 <div style={{ fontSize: 16, fontWeight: 600, color: "#7a9ab5", marginTop: 8 }}>No checkpoint reviews yet</div>
               </Card>
             ) : (
-              checkpoints.sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(cp => {
+              checkpoints.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).map(cp => {
                 const mentor = USERS[cp.mentorId] || { name: "Unknown", color: "#7a9ab5" };
                 return (
                   <Card key={cp.id} style={{ borderLeft: `3px solid ${mentor.color}` }}>
@@ -3593,7 +3590,7 @@ PROGRESS I'VE NOTICED:
                 <div style={{ fontSize: 16, fontWeight: 600, color: "#7a9ab5", marginTop: 8 }}>No videos yet</div>
                 <div style={{ fontSize: 14, color: "#3a5068", marginTop: 4 }}>Film yourself performing IDP tasks. Track your progression over time.</div>
               </Card>
-            ) : videos.sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(v => {
+            ) : videos.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).map(v => {
               // Extract YouTube thumbnail
               const ytMatch = (v.url || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
               const thumbUrl = ytMatch ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg` : null;
@@ -3684,13 +3681,8 @@ PROGRESS I'VE NOTICED:
                   {isCandidate ? "Practice MA in the Sparring Partner tab (Written MA mode) or add sessions in Resources." : "Mark hasn't recorded any MA sessions yet."}
                 </div>
               </Card>
-            ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(s => {
+            ) : [...maSessions].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).map(s => {
               let aiScores = parseSummary(s.summary);
-              if (aiScores?.scores) { console.log("History:", s.id?.slice(0,7), s.date, JSON.stringify(aiScores.scores)); }
-
-              if (s.summary && (!aiScores || !aiScores.scores)) {
-                console.log("Summary parse failed for", s.id, "— raw type:", typeof s.summary, "— first 200:", String(s.summary).slice(0, 200));
-              }
               const scoreColor = (v) => v >= 4 ? "#28a858" : v >= 3 ? "#e07830" : "#e05028";
               const mentorFeedback = s.mentorFeedback || [];
               const didWell = aiScores?.did_well || aiScores?.strengths || [];
@@ -3975,7 +3967,7 @@ PROGRESS I'VE NOTICED:
           maSessions.forEach(m => events.push({ type: "ma", date: m.date, data: m }));
           checkpoints.forEach(c => events.push({ type: "checkpoint", date: c.date, data: c }));
           clinicFeedback.forEach(c => events.push({ type: "clinic", date: c.date, data: c }));
-          events.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+          events.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || ""));
 
           const typeColors = { reflection: "#e07830", video: "#3088cc", ma: "#c060a0", checkpoint: "#28a858", clinic: "#e8a050" };
           const typeIcons = { reflection: "📓", video: "🎥", ma: "🧠", checkpoint: "📋", clinic: "🎤" };
@@ -4042,7 +4034,7 @@ PROGRESS I'VE NOTICED:
                 <div style={{ fontSize: 16, fontWeight: 600, color: "#7a9ab5", marginTop: 8 }}>No clinics logged yet</div>
                 <div style={{ fontSize: 14, color: "#3a5068", marginTop: 4 }}>After leading a training clinic for instructors, reflect here.</div>
               </Card>
-            ) : clinicFeedback.sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(c => (
+            ) : clinicFeedback.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).map(c => (
               <Card key={c.id} style={{ borderLeft: "3px solid #e8a050" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
                   <div>
@@ -4371,7 +4363,7 @@ PROGRESS I'VE NOTICED:
                           setWrittenMALoading(true);
                           // Build scoring input with dialog + past sessions for comparison
                           const dialogText = writtenMADialog.map(m => `${m.role === "user" ? "Mark" : "Examiner"}: ${m.content}`).join("\n");
-                          const pastSessions = maSessions.filter(s => s.summary).sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 3);
+                          const pastSessions = maSessions.filter(s => s.summary).sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).slice(0, 3);
                           let pastContext = "";
                           if (pastSessions.length > 0) {
                             pastContext = "\n\nPREVIOUS SESSIONS FOR COMPARISON:\n";
@@ -4777,7 +4769,7 @@ PROGRESS I'VE NOTICED:
                           setExamMALoading(true);
                           const dialogText = examMA.dialogMessages.map(m => `${m.role === "user" ? "Mark" : "Peer"}: ${m.content}`).join("\n");
                           const debriefText = examMA.debriefMessages.map(m => `${m.role === "user" ? "Mark" : "Examiner"}: ${m.content}`).join("\n");
-                          const pastSessions = maSessions.filter(s => s.summary).sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 3);
+                          const pastSessions = maSessions.filter(s => s.summary).sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.id || "").localeCompare(a.id || "")).slice(0, 3);
                           let pastContext = "";
                           if (pastSessions.length > 0) {
                             pastContext = "\n\nPREVIOUS SESSIONS FOR COMPARISON:\n";
